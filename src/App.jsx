@@ -437,7 +437,7 @@ export default function App() {
     return (
       <div className="min-h-[100dvh] bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4">
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-md mx-auto">
-          <h1 className="text-4xl sm:text-5xl font-black text-blue-600 italic text-center mb-6 sm:mb-8">TEST</h1>
+          <h1 className="text-4xl sm:text-5xl font-black text-blue-600 italic text-center mb-6 sm:mb-8">Bluff</h1>
           <div className="space-y-3 sm:space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-3 sm:p-4 bg-slate-100 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base" />
             <button onClick={createRoom} disabled={loading} className="w-full py-3 sm:py-4 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all">Host Game</button>
