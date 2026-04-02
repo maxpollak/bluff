@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -28,14 +28,86 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const PROMPT_PAIRS = [
-  { normal: "Write an actor you could beat in a physical fight.", bluff: "Who is the ugliest actor in Hollywood?" },
-  { normal: "What is the worst smell in the world?", bluff: "Name a food that you absolutely hate." },
-  { normal: "What is the most useless superpower?", bluff: "What would you do if you were invisible for a day?" },
-  { normal: "Draw the color that best describes your current mood.", bluff: "What is your favorite color?" },
-  { normal: "Name a fruit that would be a terrible weapon.", bluff: "What is your favorite fruit to eat?" },
-  { normal: "Draw a logo for a company that sells 'Disappointment'.", bluff: "Draw a logo for a generic tech company." },
-  { normal: "What animal would be the rudest if it could talk?", bluff: "What is your favorite animal?" },
-  { normal: "What's the weirdest thing you've seen in a bathroom?", bluff: "Name an object you find in a typical bathroom." }
+  { normal: "What video game requires the most skill?", bluff: "What is a game you would play with your kids?" },
+  { normal: "How many days can you survive in prison?", bluff: "Name an amount of days/months/ years between 0 and 2 years" },
+  { normal: "What age should you stop going to the club?", bluff: "Pick a number between 21 and 90" },
+  { normal: "What is your pump-up song?", bluff: "What's a song you wouldn't skip if it came on?" },
+  { normal: "How much money would it take you to run through the street naked right now?", bluff: "Choose an amount of money between $1 and $100,000" },
+  { normal: "What show or movie is really uncomfortable to watch with parents?", bluff: "What's a TV show you watch that you would not recommend to a friend?" },
+  { normal: "What influencer do you think you could beat in a fight?", bluff: "Who was the first Youtuber you remember watching" },
+  { normal: "What age did you get your first allowance?", bluff: "What age did your parents buy your first video game?" },
+  { normal: "How many people would show up to your birthday party?", bluff: "Pick a number between 5 and 300" },
+  { normal: "What two artists should collaborate on a song?", bluff: "Name two music artists that have dated" },
+  { normal: "How long can you go without showering?", bluff: "Write a number of days between 0 and 31" },
+  { normal: "What actor do you think you can beat in a fight?", bluff: "Who is your favorite actor?" },
+  { normal: "What is the worst food to order on a date?", bluff: "What is your favorite food to order at a restaurant?" },
+  { normal: "What color would you say your mood is right now?", bluff: "What's your least favorite color?" },
+  { normal: "Name someone here who you think would be a secret serial killer", bluff: "Who do you think is the most forgetful person here?" },
+  { normal: "If you started training right now, how long would it take you to dunk a basketball?", bluff: "Pick a time frame between 2 weeks and 1 year" },
+  { normal: "What is the largest animal you think you could beat in a fight?", bluff: "What's an animal you've seen up close before?" },
+  { normal: "How fast do you think you can throw a baseball?", bluff: "Pick a miles-per-hour number between 10 and 100" },
+  { normal: "How many times do you pee a day?", bluff: "Put a number between 0 and 8" },
+  { normal: "Who is the worst actor?", bluff: "Name an actor you recognize immediately by their voice" },
+  { normal: "How many times a week do you wash your feet in the shower?", bluff: "On average, how many cups of water do you drink a day?" },
+  { normal: "If someone is showing you a video on their phone, what is the longest it should be?", bluff: "Put a time between 0 seconds and 10 minutes" },
+  { normal: "Worst emoji to reply to the FBI?", bluff: "What emoji do you use the most when texting?" },
+  { normal: "Which celeb should be president?", bluff: "Who is the most overrated celebrity?" },
+  { normal: "How many days can you go without eating?", bluff: "Pick a number between 1 and 40 (Answer in \"days\")" },
+  { normal: "Best age to retire?", bluff: "What age would you want to stay forever?" },
+  { normal: "Age you want to have kids?", bluff: "Pick a number between 24 and 75" },
+  { normal: "Athlete you can beat at their own sport?", bluff: "Who is the worst pro athlete?" },
+  { normal: "How many days can you go without pooping?", bluff: "Pick a number between 1 and 20" },
+  { normal: "How many hotdogs could you eat in one sitting?", bluff: "Most amount of hotdogs you have eaten in one sitting before?" },
+  { normal: "What's the top speed of a human?", bluff: "What speed do you think you personally can run?" },
+  { normal: "How many kids could you take in a fight?", bluff: "Number between 8 and 30" },
+  { normal: "How much money would you donate to a children’s charity?", bluff: "Most amount of money would you pay for a fast-food meal" },
+  { normal: "What would you bring to the past?", bluff: "Popular trend of 2025" },
+  { normal: "If you had to use one emoji to describe your dating life, what would it be?", bluff: "What is your favorite animal emoji?" },
+  { normal: "What would you tell your 10-year-old self if you could travel back in time?", bluff: "What advice would you give a dog?" },
+  { normal: "How many yards do you think you could run after receiving an NFL kickoff?", bluff: "Pick a number between 5 and 100" },
+  { normal: "Where would you hide buried treasure?", bluff: "Where is somewhere you would never stick your hand in" },
+  { normal: "How many dates before kissing? (answer in terms of \"dates\")", bluff: "How many dates could you fit in your mouth (answer in terms of \"dates\")" },
+  { normal: "If you could see any artist in concert, who would it be?", bluff: "What was the best concert you've been to?" },
+  { normal: "How long should you grill a burger?", bluff: "How long on average does it take you to poop?" },
+  { normal: "What item in your house can't you live without?", bluff: "What is the most fragile thing in your house?" },
+  { normal: "Best age to have puberty?", bluff: "Pick a number between 9 and 15" },
+  { normal: "Who is the most responsible person here?", bluff: "Who is the best driver here?" },
+  { normal: "How much money would it take to reveal your internet search history?", bluff: "Pick a number between 1 million and 10 million" },
+  { normal: "How many hours of sleep do you get per night?", bluff: "How many hours could you watch TV or doom scroll for without getting up?" },
+  { normal: "How long can you go without leaving your house?", bluff: "Most amount of time you have gone without leaving your house?" },
+  { normal: "Your dream Halloween costume?", bluff: "Ugliest actor" },
+  { normal: "Who would make the best lawyer?", bluff: "Who argues the most?" },
+  { normal: "What's your go-to drink?", bluff: "What drink did you last have" },
+  { normal: "What age should you first get your phone?", bluff: "What age did you hit puberty" },
+  { normal: "What item would you show a medieval peasant?", bluff: "What item do you use every day?" },
+  { normal: "What would you show people from the future to represent 2025?", bluff: "What item represents your daily life right now?" }
+];
+
+const SUS_PROMPTS = [
+  { normal: "What’s the longest you think you’d last during sex?", bluff: "How many minutes can you stay focused on one thing without getting distracted?" },
+  { normal: "What’s a food that would be a terrible lube during sex?", bluff: "What’s a food that would be really messy to handle?" },
+  { normal: "What’s a name that sounds like it belongs to someone with a huge penis?", bluff: "What’s a name that sounds very unconfident?" },
+  { normal: "What’s a place you should absolutely NOT have sex?", bluff: "What’s a place you should hide while playing hide and seek?" },
+  { normal: "What’s something that would immediately ruin the mood during sex?", bluff: "What’s something that would ruin a serious moment?" },
+  { normal: "What’s something that would be weird to say right before sex?", bluff: "What’s something that would be good to say to your teacher" },
+  { normal: "What’s an object that looks like a penis?", bluff: "What’s the tallest object you can think of" },
+  { normal: "What’s something that would be awkward to moan during sex?", bluff: "What’s the name of your first pet" },
+  { normal: "What’s a song that would make sex extremely uncomfortable?", bluff: "What's the last song you listened to?" },
+  { normal: "What’s a word that sounds dirty even though it’s not?", bluff: "What’s a word you'd moan while having sex?" },
+  { normal: "What’s something that would be weird to bring into bed during sex?", bluff: "What’s something that would be weird to bring to work?" },
+  { normal: "What’s a profession that probably has the best sex lives?", bluff: "What’s a profession that seems the most exciting?" },
+  { normal: "What’s something that would be suspicious to find in someone’s bedroom?", bluff: "What’s something that you own that you don't want other people to see?" },
+  { normal: "What’s something that would make boobs less attractive?", bluff: "Write \"if they were on ____\" and fill in the blank with anyone" },
+  { normal: "What’s something you’d never want someone to say about your penis?", bluff: "What’s something a snail would love to hear?" },
+  { normal: "What’s something that would be the worst excuse to avoid sex?", bluff: "What’s the best excuse for not doing your homework?" },
+  { normal: "What’s something that would make a hookup immediately awkward?", bluff: "Name a bad person" },
+  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you compliment a horse?" },
+  { normal: "What’s something that would be uncomfortable to hear during sex?", bluff: "What’s something weird to hear in a quiet moment?" },
+  { normal: "What’s something that would make a kiss instantly bad?", bluff: "What’s something that would make a first impression bad?" },
+  { normal: "What’s something that would be weird to do after sex?", bluff: "What’s something you would want to do after a sad movie" },
+  { normal: "What’s something that would be the worst thing to say about someone’s vagina?", bluff: "How would you describe old person boobies" },
+  { normal: "Create a name for a vagina", bluff: "Create a nickname for a turtle" },
+  { normal: "Create a name for boobs", bluff: "Create a nickname for balls" }
 ];
 
 const PRESET_COLORS = ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ffffff'];
@@ -68,10 +140,12 @@ const DrawingCanvas = ({ onSave, disabled, initialData, themeObj }) => {
       const rect = canvas.parentElement.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
-      if (initialData) {
+      if (initialData && initialData !== '') {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
         img.src = initialData;
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     };
     resize();
@@ -201,11 +275,6 @@ const DrawingCanvas = ({ onSave, disabled, initialData, themeObj }) => {
           onTouchEnd={stopAction}
           className="w-full h-full"
         />
-        {disabled && (
-          <div className="absolute inset-0 bg-black/5 flex items-center justify-center pointer-events-none">
-             <span className="bg-white/90 px-4 py-2 rounded-full font-bold text-stone-500 shadow-lg text-sm sm:text-base">Canvas Frozen</span>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -213,6 +282,7 @@ const DrawingCanvas = ({ onSave, disabled, initialData, themeObj }) => {
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [isPortrait, setIsPortrait] = useState(false);
   const timerRef = useRef(null);
   const [localPlayerId] = useState(() => {
     const stored = sessionStorage.getItem('bluff_player_id');
@@ -233,8 +303,16 @@ export default function App() {
   const [joinedRoomCode, setJoinedRoomCode] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Directly points to your database's 'rooms' collection
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
+
+  useEffect(() => {
+    const checkOrientation = () => {
+        setIsPortrait(window.innerHeight > window.innerWidth && window.innerWidth < 1024);
+    };
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -266,7 +344,7 @@ export default function App() {
   }, [user, joinedRoomCode, localPlayerId]);
 
   useEffect(() => {
-    if (gameState?.status === 'DRAWING') {
+    if (gameState?.status === 'DRAWING' || gameState?.status === 'LOBBY') {
       setHasVoted(false);
       setMyDrawing('');
     }
@@ -335,6 +413,9 @@ export default function App() {
       await setDoc(getRoomRef(code), {
         code, hostId: localPlayerId, theme: 'rose', status: 'LOBBY',
         targetScore: 5,
+        susMode: false,
+        susQuestionsAsked: 0,
+        susRequest: null,
         players: [{ id: localPlayerId, name: userName, score: 0 }],
         readyPlayers: [], drawings: {}, votes: {}, round: 1, createdAt: Date.now()
       });
@@ -366,7 +447,24 @@ export default function App() {
 
   const startRound = async () => {
     if (!user || !isHost) return;
-    const prompt = PROMPT_PAIRS[Math.floor(Math.random() * PROMPT_PAIRS.length)];
+
+    let useSus = false;
+    
+    if (gameState.susMode) {
+        const estimatedTotalRounds = gameState.targetScore || 5; 
+        const targetSusQuestions = Math.max(1, Math.round(estimatedTotalRounds * 0.25));
+        const susCount = gameState.susQuestionsAsked || 0;
+        const currentRound = gameState.round || 1;
+        const estimatedRoundsLeft = Math.max(1, estimatedTotalRounds - currentRound + 1);
+
+        if (susCount < targetSusQuestions) {
+            const probability = (targetSusQuestions - susCount) / estimatedRoundsLeft;
+            useSus = Math.random() <= probability;
+        }
+    }
+
+    const promptList = useSus ? SUS_PROMPTS : PROMPT_PAIRS;
+    const prompt = promptList[Math.floor(Math.random() * promptList.length)];
     const impId = gameState.players[Math.floor(Math.random() * gameState.players.length)].id;
     
     const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
@@ -374,10 +472,14 @@ export default function App() {
       ? gameState.players.map(p => ({ ...p, score: 0 })) 
       : gameState.players;
 
+    const newRound = isGameOver ? 1 : (gameState.round || 1) + 1;
+    const newSusCount = isGameOver ? 0 : (useSus ? (gameState.susQuestionsAsked || 0) + 1 : (gameState.susQuestionsAsked || 0));
+
     await updateDoc(getRoomRef(joinedRoomCode), {
       status: 'DRAWING', currentPrompt: prompt, impostorId: impId,
       drawings: {}, votes: {}, readyPlayers: [], timer: 90, 
-      round: isGameOver ? 1 : (gameState.round || 1) + 1,
+      round: newRound,
+      susQuestionsAsked: newSusCount,
       players: playersToSave
     });
     runTimer(90, 'REVEAL');
@@ -431,23 +533,48 @@ export default function App() {
     await updateDoc(getRoomRef(joinedRoomCode), { [`votes.${localPlayerId}`]: targetUid });
   };
 
+  const requestSusMode = async () => {
+    if (!user || isHost) return;
+    await updateDoc(getRoomRef(joinedRoomCode), { susRequest: { requesterName: userName, requesterId: localPlayerId } });
+  };
+
+  const handleSusRequest = async (accept) => {
+    if (!isHost) return;
+    if (accept) {
+      await updateDoc(getRoomRef(joinedRoomCode), { susMode: true, susRequest: null });
+    } else {
+      await updateDoc(getRoomRef(joinedRoomCode), { susRequest: null });
+    }
+  };
+
   const t = THEMES[gameState?.theme] || THEMES.rose;
+
+  // GLOBAL ORIENTATION OVERLAY
+  if (isPortrait) {
+    return (
+      <div className="fixed inset-0 z-[999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
+        <div className="w-24 h-24 mb-6 relative">
+          <RotateCw size={96} className="text-blue-500 animate-spin-slow opacity-20 absolute inset-0" />
+          <Smartphone size={80} className="text-white absolute inset-0 m-auto animate-bounce-horizontal" />
+        </div>
+        <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Turn your phone sideways</h2>
+        <p className="text-stone-400 font-bold text-sm max-w-[200px]">This game is designed to be played in landscape mode for a better whiteboard experience.</p>
+      </div>
+    );
+  }
 
   if (!gameState) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4">
-        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-md mx-auto">
-          <h1 className="text-4xl sm:text-5xl font-black text-blue-600 italic text-center mb-6 sm:mb-8">Bluff</h1>
-          <div className="space-y-3 sm:space-y-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl font-black text-blue-600 italic text-center mb-6 sm:mb-8 tracking-tighter">BLUFF</h1>
+          <div className="space-y-3">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-3 sm:p-4 bg-slate-100 rounded-xl font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base" />
             <button onClick={createRoom} disabled={loading} className="w-full py-3 sm:py-4 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all">Host Game</button>
-            
-            {/* THIS IS THE JOIN BUTTON FIX: Stacks neatly on phones! */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-              <input type="text" maxLength={6} inputMode="numeric" pattern="[0-9]*" placeholder="6-Digit Code" value={roomCode} onChange={e => setRoomCode(e.target.value.replace(/[^0-9]/g, ''))} className="w-full sm:flex-1 p-3 sm:p-4 bg-slate-100 rounded-xl text-center font-bold tracking-widest focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base" />
-              <button onClick={joinRoom} disabled={loading} className="w-full sm:w-auto px-8 py-3 sm:py-0 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 active:scale-95 transition-all text-base">Join</button>
+            <div className="flex gap-2 pt-1">
+              <input type="text" maxLength={6} inputMode="numeric" pattern="[0-9]*" placeholder="6-Digit Code" value={roomCode} onChange={e => setRoomCode(e.target.value.replace(/[^0-9]/g, ''))} className="flex-1 p-3 sm:p-4 bg-slate-100 rounded-xl text-center font-bold tracking-widest focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm sm:text-base" />
+              <button onClick={joinRoom} disabled={loading} className="px-6 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 active:scale-95 transition-all text-base">Join</button>
             </div>
-            
             {error && <p className="text-red-500 text-center font-medium mt-2 text-sm">{error}</p>}
           </div>
         </div>
@@ -457,61 +584,100 @@ export default function App() {
 
   if (gameState.status === 'LOBBY') {
     return (
-      <div className={`min-h-[100dvh] ${t.bg} p-4 sm:p-6 text-white transition-colors duration-500 flex flex-col`} style={t.style}>
-        <div className="flex justify-between items-start mb-6 sm:mb-8">
+      <div className={`min-h-screen ${t.bg} p-4 sm:p-6 text-white transition-colors duration-500 flex flex-col`} style={t.style}>
+        {isHost && gameState.susRequest && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+             <div className="bg-white p-6 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+                 <div className="text-5xl mb-4 flex justify-center"><Flame size={48} className="text-rose-500" /></div>
+                 <h3 className="text-lg sm:text-xl font-black text-stone-800 mb-6 leading-tight">
+                    {gameState.susRequest.requesterName} has requested Sus addition, turn it on?
+                 </h3>
+                 <div className="flex gap-3">
+                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-3 bg-stone-200 text-stone-700 hover:bg-stone-300 font-bold rounded-xl transition-all">No</button>
+                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-3 bg-rose-500 text-white hover:bg-rose-600 font-bold rounded-xl shadow-lg shadow-rose-200 transition-all">Yes</button>
+                 </div>
+             </div>
+          </div>
+        )}
+
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-3xl sm:text-4xl font-black drop-shadow-md">{gameState.code}</h2>
-            <button onClick={copyInviteLink} className="mt-2 flex items-center gap-1.5 text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-sm transition-all">
-              {linkCopied ? <Check size={14} className="text-green-300" /> : <Copy size={14} />}
-              {linkCopied ? "Copied!" : "Copy Invite Link"}
+            <h2 className="text-3xl sm:text-4xl font-black drop-shadow-md leading-none">{gameState.code}</h2>
+            <button onClick={copyInviteLink} className="mt-2 flex items-center gap-1.5 text-[10px] font-bold bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full backdrop-blur-sm transition-all">
+              {linkCopied ? <Check size={12} className="text-green-300" /> : <Copy size={12} />}
+              {linkCopied ? "Copied!" : "Invite Link"}
             </button>
           </div>
+          {isHost && (
+             <button onClick={startRound} disabled={gameState.players.length < 2} className="px-8 py-3 bg-white text-stone-800 rounded-xl font-black shadow-xl active:scale-95 transition-all text-sm uppercase">Start Game</button>
+          )}
         </div>
         
-        {isHost && (
-          <div className="mb-4 sm:mb-6 bg-stone-900/60 p-4 rounded-xl border border-stone-900/40 shadow-inner backdrop-blur-md">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/90 mb-3 flex items-center gap-2 drop-shadow-sm">
-              <Palette size={14} /> Room Theme
-            </h3>
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 pb-4 border-b border-white/20 mb-4">
-              {Object.keys(THEMES).map(k => (
-                <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
-                  style={THEMES[k].style} 
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 border-2 ${THEMES[k].bg} transition-all duration-300 ${gameState.theme === k ? 'border-white scale-110 shadow-xl ring-2 ring-white/50' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`} />
-              ))}
-            </div>
-            
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white/90 mb-3 flex items-center justify-between drop-shadow-sm">
-              <span className="flex items-center gap-2"><Trophy size={14} /> Points to Win</span>
-              <span className="text-base sm:text-lg font-black bg-white/20 px-3 py-1 rounded-lg">{gameState.targetScore || 5}</span>
-            </h3>
-            <input 
-              type="range" min="3" max="15" 
-              value={gameState.targetScore || 5} 
-              onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })}
-              className="w-full accent-white cursor-pointer" 
-            />
-          </div>
-        )}
+        <div className="flex gap-4 flex-1 overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col gap-4">
+                {isHost ? (
+                    <div className="bg-stone-900/60 p-4 rounded-xl border border-stone-900/40 shadow-inner backdrop-blur-md overflow-y-auto">
+                        <label className="flex items-center justify-between bg-stone-900/40 p-3 rounded-xl border border-stone-900/20 cursor-pointer hover:bg-stone-900/60 transition-all mb-4">
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/90 flex items-center gap-2">
+                            <Flame size={14} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} />
+                            Include Sus questions
+                        </span>
+                        <div className={`w-10 h-5 rounded-full p-1 transition-colors ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${gameState.susMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </div>
+                        <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
+                        </label>
 
-        {!isHost && (
-          <div className="mb-4 sm:mb-6 bg-stone-900/30 p-4 rounded-xl border border-stone-900/20 shadow-inner backdrop-blur-md flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-white/90 drop-shadow-sm">Points to Win</span>
-            <span className="text-lg sm:text-xl font-black bg-white/20 px-4 py-1 rounded-lg shadow-inner">{gameState.targetScore || 5}</span>
-          </div>
-        )}
-
-        <div className="bg-white rounded-3xl p-4 sm:p-6 text-stone-800 flex-1 sm:h-72 overflow-y-auto mb-4 sm:mb-6 shadow-2xl">
-          {gameState.players.map(p => (
-            <div key={p.id} className="p-2 sm:p-3 mb-2 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 text-sm sm:text-base">
-              <div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center transition-colors duration-500 flex-shrink-0`}>{p.name[0]}</div>
-              <span className="truncate">{p.name} {p.id === localPlayerId && "(You)"}</span>
+                        <div className="flex gap-4 items-center mb-4 pb-4 border-b border-white/10">
+                            <div className="flex-1">
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-2">Theme</h3>
+                                <div className="flex flex-wrap gap-2">
+                                {Object.keys(THEMES).map(k => (
+                                    <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
+                                    style={THEMES[k].style} 
+                                    className={`w-7 h-7 rounded-full border-2 transition-all ${gameState.theme === k ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-50'}`} />
+                                ))}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">Win At</span>
+                            <div className="flex items-center gap-3">
+                                <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-24 accent-white" />
+                                <span className="text-base font-black bg-white/20 px-2 py-0.5 rounded">{gameState.targetScore || 5}</span>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-stone-900/30 p-4 rounded-xl border border-stone-900/20 shadow-inner backdrop-blur-md">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/90">Points to Win</span>
+                            <span className="text-lg font-black bg-white/20 px-4 py-1 rounded-lg">{gameState.targetScore || 5}</span>
+                        </div>
+                        {!gameState.susMode ? (
+                            <button onClick={requestSusMode} className="w-full py-3 bg-stone-900/40 hover:bg-stone-900/60 border border-stone-900/20 rounded-xl text-xs font-bold text-white/90 uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                <Flame size={14} className="text-stone-400" /> Request Sus addition
+                            </button>
+                        ) : (
+                            <div className="w-full py-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-xs font-bold text-rose-100 uppercase tracking-widest flex items-center justify-center gap-2">
+                                <Flame size={14} className="text-rose-400" /> Sus addition is ON
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-          ))}
+
+            <div className="w-1/3 bg-white rounded-2xl p-4 text-stone-800 overflow-y-auto shadow-2xl flex flex-col gap-2">
+                <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest border-b pb-2 mb-1">Players</h3>
+                {gameState.players.map(p => (
+                    <div key={p.id} className="p-2 bg-stone-50 rounded-lg font-bold flex items-center gap-2 border border-stone-100 text-xs">
+                        <div className={`w-5 h-5 rounded-full ${t.bg} text-white flex items-center justify-center text-[10px]`}>{p.name[0]}</div>
+                        <span className="truncate">{p.name} {p.id === localPlayerId && "(You)"}</span>
+                    </div>
+                ))}
+            </div>
         </div>
-        {isHost && (
-          <button onClick={startRound} disabled={gameState.players.length < 2} className="w-full py-3 sm:py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all mt-auto text-sm sm:text-base">Start Round</button>
-        )}
       </div>
     );
   }
@@ -523,50 +689,56 @@ export default function App() {
     const isReady = gameState.readyPlayers?.includes(localPlayerId);
 
     return (
-      <div className="h-[100dvh] bg-stone-50 flex flex-col">
-        <div className="bg-white p-3 sm:p-4 border-b flex justify-between items-center z-10 shadow-sm">
-          <div className="flex-1 pr-2 sm:pr-4 min-w-0">
-            <span className="text-[10px] font-bold text-stone-400 block uppercase">Your Secret Prompt</span>
-            <span className={`text-sm sm:text-lg font-black leading-tight truncate block ${t.text} transition-colors duration-500`}>{prompt}</span>
+      <div className="fixed inset-0 h-screen w-screen bg-white flex flex-col overflow-hidden">
+        {/* Landscape-optimized Header */}
+        <div className="bg-white px-4 py-2 border-b flex justify-between items-center z-10 shadow-sm shrink-0">
+          <div className="flex-1 pr-4 min-w-0">
+            <span className="text-[8px] font-black text-stone-400 block uppercase leading-none mb-0.5">Prompt</span>
+            <span className={`text-sm font-black leading-tight truncate block ${t.text}`}>{prompt}</span>
           </div>
-          <div className="font-mono font-bold bg-stone-100 px-3 py-1 rounded-full text-sm sm:text-base flex-shrink-0">{gameState.timer}s</div>
+          <div className="font-mono font-bold bg-stone-100 px-3 py-1 rounded-full text-xs flex-shrink-0">{gameState.timer}s</div>
         </div>
-        <div className="flex-1 p-2 overflow-hidden flex flex-col">
+
+        <div className="flex-1 p-1 overflow-hidden flex flex-col">
           <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} themeObj={t} />
         </div>
-        {!isFrozen && (
-          <div className="p-3 sm:p-4 bg-white border-t border-stone-200 flex justify-between items-center z-10 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-            <span className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
-            <button onClick={toggleReady}
-              className={`px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black text-sm sm:text-base transition-all ${isReady ? 'bg-green-500 text-white shadow-lg shadow-green-200 ring-2 ring-green-400 ring-offset-2' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
-              {isReady ? "READY!" : "DONE"}
-            </button>
+
+        <div className="px-3 py-1.5 bg-white border-t border-stone-100 flex justify-between items-center z-10 shrink-0">
+          <span className="text-[9px] font-bold text-stone-400 uppercase">{gameState.readyPlayers?.length || 0}/{gameState.players.length} Ready</span>
+          <div className="flex gap-2">
+            {!isFrozen ? (
+                <button onClick={toggleReady}
+                    className={`px-6 py-2 rounded-lg font-black text-xs transition-all ${isReady ? 'bg-green-500 text-white' : 'bg-stone-200 text-stone-600'}`}>
+                    {isReady ? "LOCKED IN" : "SUBMIT"}
+                </button>
+            ) : (
+                isHost && (
+                    <button onClick={goToVoting} className={`px-8 py-2 ${t.bg} text-white rounded-lg font-black text-xs shadow-lg uppercase`}>Reveal Vote</button>
+                )
+            )}
           </div>
-        )}
-        {isFrozen && isHost && (
-          <button onClick={goToVoting} className={`m-3 sm:m-4 py-3 sm:py-4 ${t.bg} text-white rounded-xl font-black shadow-lg active:scale-95 transition-all text-sm sm:text-base`} style={t.style}>Open Voting</button>
-        )}
+        </div>
       </div>
     );
   }
 
   if (gameState.status === 'VOTING') {
     return (
-      <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6">
-        <h2 className="text-xl sm:text-2xl font-black mb-1 sm:mb-2 text-stone-800">Vote for the Impostor!</h2>
-        <p className="text-stone-500 mb-4 sm:mb-6 font-medium text-xs sm:text-base">Target Prompt: <span className={`font-bold ${t.text} transition-colors duration-500`}>{gameState.currentPrompt.normal}</span></p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="min-h-screen bg-stone-50 p-4 overflow-y-auto">
+        <h2 className="text-xl font-black mb-1 text-stone-800">Who's lying?</h2>
+        <p className="text-stone-500 mb-4 font-medium text-xs italic">The prompt was: <span className={`font-bold not-italic ${t.text}`}>{gameState.currentPrompt.normal}</span></p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {gameState.players.map(p => (
             <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
-              className={`bg-white p-2 rounded-2xl border-2 shadow-sm transition-all ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 ${t.activeRing}` : 'border-stone-100 hover:border-stone-300'}`}>
-              <div className="aspect-square bg-stone-50 rounded-xl mb-2 overflow-hidden border border-stone-100 relative">
+              className={`bg-white p-2 rounded-2xl border-2 shadow-sm transition-all ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-2 ${t.activeRing}` : 'border-stone-100 hover:border-stone-300'}`}>
+              <div className="aspect-video bg-stone-100 rounded-xl mb-2 overflow-hidden border border-stone-100 relative">
                 {gameState.drawings?.[p.id] ? (
                   <img src={gameState.drawings[p.id]} className="w-full h-full object-contain absolute inset-0" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-stone-300 font-bold text-[10px] tracking-wider absolute inset-0">NO DRAWING</div>
+                  <div className="w-full h-full flex items-center justify-center text-stone-300 font-bold text-[8px] uppercase tracking-widest absolute inset-0 text-center">Empty Canvas</div>
                 )}
               </div>
-              <span className="font-bold text-xs sm:text-sm text-stone-700 truncate block">{p.name} {p.id === localPlayerId && "(You)"}</span>
+              <span className="font-bold text-xs text-stone-700 truncate block">{p.name} {p.id === localPlayerId && "(You)"}</span>
             </button>
           ))}
         </div>
@@ -576,9 +748,9 @@ export default function App() {
 
   if (gameState.status === 'COUNTDOWN') {
     return (
-      <div className={`min-h-[100dvh] ${t.bg} flex flex-col items-center justify-center text-white transition-colors duration-500 p-4`} style={t.style}>
-        <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 drop-shadow-md bg-black/20 px-6 py-2 rounded-full backdrop-blur-sm text-center">All Votes In!</h2>
-        <div className="text-center animate-pulse text-[10rem] sm:text-[15rem] font-black drop-shadow-2xl leading-none">{gameState.timer}</div>
+      <div className={`h-screen ${t.bg} flex flex-col items-center justify-center text-white`} style={t.style}>
+        <h2 className="text-xl font-black text-white/90 tracking-widest uppercase mb-4 drop-shadow-md bg-black/20 px-6 py-2 rounded-full">Results in...</h2>
+        <div className="text-center animate-pulse text-[10rem] font-black drop-shadow-2xl leading-none">{gameState.timer}</div>
       </div>
     );
   }
@@ -590,38 +762,40 @@ export default function App() {
     const winners = gameState.players.filter(p => p.score === maxScore && p.score >= (gameState.targetScore || 5));
 
     return (
-      <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 flex flex-col">
-        {isGameOver && (
-          <div className="text-center bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-900 p-4 sm:p-6 rounded-3xl mb-4 sm:mb-6 shadow-2xl border-4 border-amber-200 animate-bounce">
-            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest mb-1">🏆 Game Over! 🏆</h2>
-            <p className="font-black text-xl sm:text-2xl drop-shadow-sm">{winners.map(w => w.name).join(' & ')} Won!</p>
-          </div>
-        )}
-        <div className="text-center mb-6 sm:mb-8 mt-2">
-          <div className={`${t.text} font-bold uppercase tracking-widest text-xs sm:text-sm mb-1 sm:mb-2 opacity-80 transition-colors duration-500`}>The Impostor Was</div>
-          <h2 className="text-4xl sm:text-5xl font-black text-stone-800 drop-shadow-sm">{imp?.name}</h2>
+      <div className="min-h-screen bg-stone-50 p-6 flex flex-row gap-6 overflow-hidden">
+        <div className="flex-1 flex flex-col justify-center text-center">
+            {isGameOver && (
+            <div className="bg-amber-400 text-amber-900 p-4 rounded-2xl mb-4 shadow-xl border-4 border-amber-200">
+                <h2 className="text-xl font-black uppercase tracking-widest">🏆 Game Won!</h2>
+                <p className="font-black text-lg">{winners.map(w => w.name).join(' & ')}</p>
+            </div>
+            )}
+            <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-1 opacity-70`}>The Impostor Was</div>
+            <h2 className="text-4xl font-black text-stone-800 mb-6 drop-shadow-sm">{imp?.name}</h2>
+            {isHost && <button onClick={startRound} className={`py-4 ${t.bg} text-white rounded-2xl font-black text-base shadow-lg active:scale-95 transition-all w-full`} style={t.style}>{isGameOver ? 'New Game' : 'Next Round'}</button>}
         </div>
-        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-xl shadow-stone-200/50 border border-stone-100 flex-1 overflow-y-auto">
-          <div className="flex flex-col sm:flex-row sm:justify-between text-[10px] sm:text-xs font-bold border-b border-stone-100 pb-3 sm:pb-4 mb-3 sm:mb-4 gap-2">
-            <span className="text-stone-500">Group: <span className="text-stone-800">{gameState.currentPrompt.normal}</span></span>
-            <span className={`${t.text} transition-colors duration-500`}>Impostor: <span className="font-black">{gameState.currentPrompt.bluff}</span></span>
+
+        <div className="flex-1 bg-white rounded-2xl p-4 shadow-xl border border-stone-100 overflow-y-auto">
+          <div className="text-[9px] font-black border-b border-stone-100 pb-2 mb-3 flex flex-col gap-1">
+            <span className="text-stone-400 uppercase tracking-widest">Prompts</span>
+            <span className="text-stone-800">Normal: {gameState.currentPrompt.normal}</span>
+            <span className={t.text}>Bluff: {gameState.currentPrompt.bluff}</span>
           </div>
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-1.5">
             {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
-              <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-2xl ${p.id === gameState.impostorId ? `${t.lightBg} ${t.border}` : 'bg-stone-50 border border-stone-100'} transition-colors duration-500`}>
-                <div className="flex items-center gap-2 sm:gap-3 overflow-hidden pr-2">
-                  <span className="font-black text-stone-400 text-xs sm:text-base flex-shrink-0 w-4 text-center">{i+1}</span>
-                  <span className={`font-bold truncate text-sm sm:text-base ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name} {p.id === localPlayerId && "(You)"}</span>
+              <div key={p.id} className={`flex justify-between items-center p-2 rounded-xl ${p.id === gameState.impostorId ? `${t.lightBg} border border-dashed ${t.border}` : 'bg-stone-50 border border-stone-100'}`}>
+                <div className="flex items-center gap-2 overflow-hidden pr-2">
+                  <span className="font-black text-stone-300 text-[10px] w-3">{i+1}</span>
+                  <span className={`font-bold truncate text-xs ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-                  <Trophy size={14} className={`sm:w-4 sm:h-4 ${isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-300"}`} />
-                  <span className="font-black text-stone-800 text-base sm:text-lg">{p.score}</span>
+                <div className="flex items-center gap-1">
+                  <Trophy size={12} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500" : "text-stone-300"} />
+                  <span className="font-black text-stone-800 text-sm">{p.score}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        {isHost && <button onClick={startRound} className={`mt-4 sm:mt-6 py-3 sm:py-4 ${t.bg} text-white rounded-2xl font-black text-base sm:text-lg shadow-lg active:scale-95 transition-all duration-500 w-full flex-shrink-0`} style={t.style}>{isGameOver ? 'Play Again (Reset Scores)' : 'Play Next Round'}</button>}
       </div>
     );
   }
