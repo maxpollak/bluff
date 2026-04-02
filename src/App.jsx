@@ -101,7 +101,7 @@ const SUS_PROMPTS = [
   { normal: "What’s something you’d never want someone to say about your penis?", bluff: "What’s something a snail would love to hear?" },
   { normal: "What’s something that would be the worst excuse to avoid sex?", bluff: "What’s the best excuse for not doing your homework?" },
   { normal: "What’s something that would make a hookup immediately awkward?", bluff: "Name a bad person" },
-  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you complement a horse?" },
+  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you compliment a horse?" },
   { normal: "What’s something that would be uncomfortable to hear during sex?", bluff: "What’s something weird to hear in a quiet moment?" },
   { normal: "What’s something that would make a kiss instantly bad?", bluff: "What’s something that would make a first impression bad?" },
   { normal: "What’s something that would be weird to do after sex?", bluff: "What’s something you would want to do after a sad movie" },
@@ -265,6 +265,7 @@ const DrawingCanvas = ({ onSave, disabled, initialData }) => {
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [isPortrait, setIsPortrait] = useState(false);
   const timerRef = useRef(null);
   const [localPlayerId] = useState(() => {
     const stored = sessionStorage.getItem('bluff_player_id');
@@ -286,6 +287,15 @@ export default function App() {
   const [linkCopied, setLinkCopied] = useState(false);
 
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -453,6 +463,21 @@ export default function App() {
 
   const t = THEMES[gameState?.theme] || THEMES.rose;
 
+  // --- WHITEBOARD ORIENTATION GUARD (ONLY FOR DRAWING/REVEAL) ---
+  if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
+    return (
+      <div className="fixed inset-0 z-[1999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
+        <div className="w-24 h-24 mb-6 relative">
+          <RotateCw size={96} className="text-blue-500 animate-spin-slow opacity-20 absolute inset-0" />
+          <Smartphone size={80} className="text-white absolute inset-0 m-auto" />
+        </div>
+        <h2 className="text-2xl font-black uppercase mb-2 leading-none tracking-tighter">TURN SIDEWAYS!</h2>
+        <p className="text-stone-400 font-bold text-sm">Whiteboard time. Flip your phone sideways to draw and reveal.</p>
+      </div>
+    );
+  }
+
+  // --- ENTRY SCREEN ---
   if (!gameState) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -482,6 +507,7 @@ export default function App() {
     );
   }
 
+  // --- LOBBY SCREEN ---
   if (gameState.status === 'LOBBY') {
     return (
       <div className={`min-h-[100dvh] ${t.bg} p-4 sm:p-8 text-white transition-all flex flex-col items-center justify-center overflow-hidden`} style={t.style}>
@@ -570,7 +596,7 @@ export default function App() {
 
   // --- GAMEPLAY STATES ---
   if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL' || gameState.status === 'VOTING' || gameState.status === 'RESULTS' || gameState.status === 'COUNTDOWN') {
-    // CRITICAL: Blank screen fix. Ensure we don't return null if the prompt data is still syncing
+    // Safety check: Prompt data might take a split second to sync. Show loader instead of crashing.
     if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white p-8 text-center`}>
