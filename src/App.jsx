@@ -429,6 +429,8 @@ export default function App() {
 
   const startRound = async () => {
     if (!isHost) return;
+    if (gameState.players.length < 2) return;
+
     let useSus = false;
     if (gameState.susMode) {
       const targetSus = Math.max(1, Math.round((gameState.targetScore || 5) * 0.25));
@@ -536,9 +538,9 @@ export default function App() {
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full sm:flex-1 p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
-              <button onClick={joinRoom} className="w-full sm:w-auto px-10 py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join</button>
+            <div className="flex flex-col gap-2">
+              <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
+              <button onClick={joinRoom} className="w-full px-8 py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join Room</button>
             </div>
             {error && <p className="text-red-500 text-center font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
           </div>
@@ -570,7 +572,15 @@ export default function App() {
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
                     <h2 className="text-5xl font-black drop-shadow-md">{gameState.code}</h2>
                </div>
-               {isHost && <button onClick={startRound} className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all uppercase tracking-tighter">Start Game</button>}
+               {isHost && (
+                 <button 
+                   onClick={startRound} 
+                   disabled={gameState.players.length < 2} 
+                   className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all uppercase tracking-tighter"
+                 >
+                    {gameState.players.length < 2 ? 'Need 2 Players' : 'Start Game'}
+                 </button>
+               )}
             </div>
 
             {isHost ? (
@@ -581,13 +591,13 @@ export default function App() {
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center">Room Theme</span>
                     <div className="flex flex-wrap gap-3 justify-center">
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
                           style={THEMES[k].style || { backgroundColor: THEMES[k].color }} 
-                          className={`w-12 h-12 rounded-full border-4 transition-all shadow-md ${gameState.theme === k ? 'border-white scale-110 shadow-lg ring-4 ring-white/20' : 'border-stone-800/40 hover:scale-105'}`} />
+                          className={`w-12 h-12 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20 shadow-white/10' : 'border-stone-800/60 opacity-80 hover:opacity-100 hover:scale-105'}`} />
                       ))}
                     </div>
                   </div>
@@ -626,10 +636,13 @@ export default function App() {
   }
 
   if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL') {
+    if (!gameState.currentPrompt) return null; // Safety guard to prevent blank screen
+    
     const isImp = gameState.impostorId === localPlayerId;
     const prompt = isImp ? gameState.currentPrompt.bluff : gameState.currentPrompt.normal;
     const isFrozen = gameState.status === 'REVEAL';
     const isReady = gameState.readyPlayers?.includes(localPlayerId);
+    
     return (
       <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden">
         <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
@@ -657,6 +670,8 @@ export default function App() {
   }
 
   if (gameState.status === 'VOTING') {
+    if (!gameState.currentPrompt) return null;
+
     return (
       <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center">
         <div className="w-full max-w-6xl h-full flex flex-col">
@@ -694,6 +709,8 @@ export default function App() {
   }
 
   if (gameState.status === 'RESULTS') {
+    if (!gameState.currentPrompt) return null;
+
     const imp = gameState.players.find(p => p.id === gameState.impostorId);
     const maxScore = Math.max(...gameState.players.map(p => p.score));
     const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
@@ -710,8 +727,8 @@ export default function App() {
           </div>
           <div className="w-full landscape:w-[400px] bg-white rounded-[3rem] p-8 shadow-2xl border border-stone-100 flex flex-col">
             <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4 shrink-0">
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
+                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black text-stone-400">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
+                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black text-stone-400">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
             </div>
             <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
               {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
