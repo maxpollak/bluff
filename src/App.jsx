@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2, Share
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -49,7 +49,38 @@ const PROMPT_PAIRS = [
   { normal: "How many times do you pee a day?", bluff: "Put a number between 0 and 8" },
   { normal: "Who is the worst actor?", bluff: "Name an actor you recognize immediately by their voice" },
   { normal: "How many times a week do you wash your feet in the shower?", bluff: "On average, how many cups of water do you drink a day?" },
-  { normal: "If someone is showing you a video on their phone, what is the longest it should be?", bluff: "Put a time between 0 seconds and 10 minutes" }
+  { normal: "If someone is showing you a video on their phone, what is the longest it should be?", bluff: "Put a time between 0 seconds and 10 minutes" },
+  { normal: "Worst emoji to reply to the FBI?", bluff: "What emoji do you use the most when texting?" },
+  { normal: "Which celeb should be president?", bluff: "Who is the most overrated celebrity?" },
+  { normal: "How many days can you go without eating?", bluff: "Pick a number between 1 and 40 (Answer in \"days\")" },
+  { normal: "Best age to retire?", bluff: "What age would you want to stay forever?" },
+  { normal: "Age you want to have kids?", bluff: "Pick a number between 24 and 75" },
+  { normal: "Athlete you can beat at their own sport?", bluff: "Who is the worst pro athlete?" },
+  { normal: "How many days can you go without pooping?", bluff: "Pick a number between 1 and 20" },
+  { normal: "How many hotdogs could you eat in one sitting?", bluff: "Most amount of hotdogs you have eaten in one sitting before?" },
+  { normal: "What's the top speed of a human?", bluff: "What speed do you think you personally can run?" },
+  { normal: "How many kids could you take in a fight?", bluff: "Number between 8 and 30" },
+  { normal: "How much money would you donate to a children’s charity?", bluff: "Most amount of money would you pay for a fast-food meal" },
+  { normal: "What would you bring to the past?", bluff: "Popular trend of 2025" },
+  { normal: "If you had to use one emoji to describe your dating life, what would it be?", bluff: "What is your favorite animal emoji?" },
+  { normal: "What would you tell your 10-year-old self if you could travel back in time?", bluff: "What advice would you give a dog?" },
+  { normal: "How many yards do you think you could run after receiving an NFL kickoff?", bluff: "Pick a number between 5 and 100" },
+  { normal: "Where would you hide buried treasure?", bluff: "Where is somewhere you would never stick your hand in" },
+  { normal: "How many dates before kissing? (answer in terms of \"dates\")", bluff: "How many dates could you fit in your mouth (answer in terms of \"dates\")" },
+  { normal: "If you could see any artist in concert, who would it be?", bluff: "What was the best concert you've been to?" },
+  { normal: "How long should you grill a burger?", bluff: "How long on average does it take you to poop?" },
+  { normal: "What item in your house can't you live without?", bluff: "What is the most fragile thing in your house?" },
+  { normal: "Best age to have puberty?", bluff: "Pick a number between 9 and 15" },
+  { normal: "Who is the most responsible person here?", bluff: "Who is the best driver here?" },
+  { normal: "How much money would it take to reveal your internet search history?", bluff: "Pick a number between 1 million and 10 million" },
+  { normal: "How many hours of sleep do you get per night?", bluff: "How many hours could you watch TV or doom scroll for without getting up?" },
+  { normal: "How long can you go without leaving your house?", bluff: "Most amount of time you have gone without leaving your house?" },
+  { normal: "Your dream Halloween costume?", bluff: "Ugliest actor" },
+  { normal: "Who would make the best lawyer?", bluff: "Who argues the most?" },
+  { normal: "What's your go-to drink?", bluff: "What drink did you last have" },
+  { normal: "What age should you first get your phone?", bluff: "What age did you hit puberty" },
+  { normal: "What item would you show a medieval peasant?", bluff: "What item do you use every day?" },
+  { normal: "What would you show people from the future to represent 2025?", bluff: "What item represents your daily life right now?" }
 ];
 
 const SUS_PROMPTS = [
@@ -60,7 +91,7 @@ const SUS_PROMPTS = [
   { normal: "What’s something that would immediately ruin the mood during sex?", bluff: "What’s something that would ruin a serious moment?" },
   { normal: "What’s something that would be weird to say right before sex?", bluff: "What’s something that would be good to say to your teacher" },
   { normal: "What’s an object that looks like a penis?", bluff: "What’s the tallest object you can think of" },
-  { normal: "What’s something that would be awkward to moan during sex?", bluff: "What’s the name of your first pet" },
+  { normal: "What’s something that would be awkward to moaning during sex?", bluff: "What’s the name of your first pet" },
   { normal: "What’s a song that would make sex extremely uncomfortable?", bluff: "What's the last song you listened to?" },
   { normal: "What’s a word that sounds dirty even though it’s not?", bluff: "What’s a word you'd moan while having sex?" },
   { normal: "What’s something that would be weird to bring into bed during sex?", bluff: "What’s something that would be weird to bring to work?" },
@@ -259,7 +290,7 @@ export default function App() {
 
   // --- ICON & METADATA INJECTION ---
   useEffect(() => {
-    const iconUrl = 'https://firebasestorage.googleapis.com/v0/b/bluff-game-4014d.firebasestorage.app/o/70219D9D-26D2-4412-ACEB-5400125589DD-removebg-preview.png?alt=media';
+    const iconUrl = '/logo.png'; // standard path for the public folder icon
     
     // Favicon
     let link = document.querySelector("link[rel~='icon']");
@@ -499,13 +530,12 @@ export default function App() {
   // --- ENTRY SCREEN ---
   if (!gameState) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md mx-auto my-auto">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md mx-auto">
           <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase">BLUFF</h1>
           <div className="space-y-4 text-stone-800">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
-            
             <div className="flex flex-col gap-3">
               <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
               <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm tracking-widest">Join Room</button>
@@ -576,7 +606,7 @@ export default function App() {
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
                           style={THEMES[k].style || { backgroundColor: THEMES[k].color }} 
-                          className={`w-10 h-10 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20 shadow-white/10' : 'border-stone-800/60 opacity-80 hover:opacity-100 hover:scale-105'}`} />
+                          className={`w-12 h-12 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20 shadow-white/10' : 'border-stone-800/60 opacity-80 hover:opacity-100 hover:scale-105'}`} />
                       ))}
                     </div>
                   </div>
@@ -599,7 +629,7 @@ export default function App() {
           </div>
 
           <div className="w-full landscape:w-80 bg-white rounded-[2rem] p-6 text-stone-800 shadow-2xl flex flex-col min-h-[250px] overflow-hidden">
-             <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-4 mb-4 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
+             <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-4 mb-4 flex justify-between shrink-0 font-black uppercase tracking-tighter">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
                 {gameState.players.map(p => (
                   <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70 font-black shrink-0">You</span>}</div>
@@ -670,12 +700,12 @@ export default function App() {
                  <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                    className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                    <div className="aspect-video bg-stone-50 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none">NO DRAWING</div>}
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING</div>}
                    </div>
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
-                      <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight">{p.name}</span>
-                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
+                      <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight font-black">{p.name}</span>
+                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter font-black">(You)</span>}
                    </div>
                  </button>
                ))}
@@ -704,21 +734,21 @@ export default function App() {
         <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 flex items-center justify-center overflow-y-auto text-stone-800">
           <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 sm:gap-8 items-center landscape:items-stretch">
             <div className="flex-1 flex flex-col justify-center text-center">
-              {isGameOver && <div className="bg-amber-400 text-amber-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] mb-6 sm:mb-8 shadow-2xl border-4 sm:border-8 border-amber-200 animate-bounce"><h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest mb-1 leading-none">🏆 WINNER!</h2><p className="font-black text-xl sm:text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
+              {isGameOver && <div className="bg-amber-400 text-amber-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] mb-6 sm:mb-8 shadow-2xl border-4 sm:border-8 border-amber-200 animate-bounce"><h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest mb-1 leading-none font-black">🏆 WINNER!</h2><p className="font-black text-xl sm:text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
               <div className={`${t.text} font-black uppercase tracking-widest text-[10px] sm:text-xs mb-2 sm:mb-3 opacity-60`}>The Impostor Was</div>
-              <h2 className="text-5xl sm:text-8xl font-black text-stone-800 mb-8 sm:mb-10 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
+              <h2 className="text-5xl sm:text-8xl font-black text-stone-800 mb-8 sm:mb-10 drop-shadow-lg tracking-tighter uppercase leading-none font-black">{imp?.name}</h2>
               {isHost && <button onClick={startRound} className={`py-4 sm:py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl sm:text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
             </div>
             <div className="w-full md:w-[400px] bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col">
               <div className="border-b border-stone-100 pb-4 sm:pb-6 mb-4 sm:mb-6 text-left space-y-3 sm:space-y-4 shrink-0">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-xs sm:text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1 font-black">Group Prompt</span><span className="text-stone-800 font-bold block text-xs sm:text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1 font-black">Impostor Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                   <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border} scale-105 shadow-md` : 'bg-stone-50 border border-stone-100'}`}>
                       <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                          <span className="font-black text-stone-300 text-xs sm:text-sm w-3 sm:w-4 shrink-0">{i+1}</span>
+                          <span className="font-black text-stone-300 text-xs sm:text-sm w-3 sm:w-4 shrink-0 font-black">{i+1}</span>
                           <span className={`font-black truncate text-xs sm:text-sm tracking-tight ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
