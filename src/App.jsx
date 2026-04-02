@@ -278,6 +278,7 @@ export default function App() {
     });
   }, [user, joinedRoomCode, localPlayerId]);
 
+  // FIX: Whiteboard clears automatically
   useEffect(() => {
     if (gameState?.status === 'DRAWING' || gameState?.status === 'LOBBY') {
       setHasVoted(false);
@@ -425,13 +426,13 @@ export default function App() {
   // --- ENTRY SCREEN ---
   if (!gameState) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md mx-auto">
           <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase">BLUFF</h1>
-          <div className="space-y-4">
+          <div className="space-y-4 text-stone-800">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
               <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm tracking-widest">Join Room</button>
             </div>
@@ -541,7 +542,8 @@ export default function App() {
 
   // --- GAMEPLAY STATES ---
   if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL' || gameState.status === 'VOTING' || gameState.status === 'RESULTS' || gameState.status === 'COUNTDOWN') {
-    if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN') {
+    // Safety check: Prompt data might take a split second to sync. Show loader instead of crashing.
+    if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN' && gameState.status !== 'RESULTS') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white p-8 text-center`}>
           <Loader2 size={48} className="animate-spin mb-4" />
@@ -569,7 +571,7 @@ export default function App() {
              <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
           </div>
           <div className="px-5 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
-            <span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
+            <span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Ready</span>
             {!isFrozen ? (
               <button onClick={toggleReady} className={`px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'}`}>
                   {isReady ? "LOCKED IN" : "SUBMIT"}
@@ -586,16 +588,16 @@ export default function App() {
       return (
         <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 overflow-y-auto flex flex-col items-center">
           <div className="w-full max-w-6xl h-full flex flex-col">
-             <div className="mb-6 shrink-0 text-center sm:text-left">
-                  <h2 className="text-2xl sm:text-4xl font-black text-stone-800 tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
+             <div className="mb-6 shrink-0 text-center sm:text-left text-stone-800">
+                  <h2 className="text-2xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
                   <p className="text-stone-400 font-bold text-xs sm:text-sm">Target Prompt: <span className={`font-black not-italic ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
              </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 flex-1">
+             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 flex-1">
                {gameState.players.map(p => (
                  <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                    className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                    <div className="aspect-video bg-stone-50 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING</div>}
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none">NO DRAWING</div>}
                    </div>
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
@@ -627,14 +629,14 @@ export default function App() {
       
       return (
         <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 flex items-center justify-center overflow-y-auto">
-          <div className="w-full max-w-5xl flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-stretch">
+          <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 sm:gap-8 items-center landscape:items-stretch">
             <div className="flex-1 flex flex-col justify-center text-center">
               {isGameOver && <div className="bg-amber-400 text-amber-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] mb-6 sm:mb-8 shadow-2xl border-4 sm:border-8 border-amber-200 animate-bounce"><h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest mb-1 leading-none">🏆 WINNER!</h2><p className="font-black text-xl sm:text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
               <div className={`${t.text} font-black uppercase tracking-widest text-[10px] sm:text-xs mb-2 sm:mb-3 opacity-60`}>The Impostor Was</div>
               <h2 className="text-5xl sm:text-8xl font-black text-stone-800 mb-8 sm:mb-10 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
               {isHost && <button onClick={startRound} className={`py-4 sm:py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl sm:text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
             </div>
-            <div className="w-full md:w-[400px] bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col">
+            <div className="w-full md:w-[400px] bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col text-stone-800">
               <div className="border-b border-stone-100 pb-4 sm:pb-6 mb-4 sm:mb-6 text-left space-y-3 sm:space-y-4 shrink-0">
                   <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1 font-black">Group Prompt</span><span className="text-stone-800 font-bold block text-xs sm:text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
                   <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1 font-black">Impostor Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
