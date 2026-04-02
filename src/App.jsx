@@ -113,10 +113,10 @@ const SUS_PROMPTS = [
 const PRESET_COLORS = ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ffffff'];
 
 const THEMES = {
-  rose: { bg: 'bg-rose-500', text: 'text-rose-500', border: 'border-rose-400', ring: 'focus:ring-rose-400', lightBg: 'bg-rose-100', lightText: 'text-rose-600', shadow: 'shadow-rose-200', hover: 'hover:bg-rose-600', activeRing: 'ring-rose-50', name: 'Rose' },
-  indigo: { bg: 'bg-indigo-600', text: 'text-indigo-600', border: 'border-indigo-500', ring: 'focus:ring-indigo-500', lightBg: 'bg-indigo-100', lightText: 'text-indigo-700', shadow: 'shadow-indigo-200', hover: 'hover:bg-indigo-700', activeRing: 'ring-indigo-50', name: 'Indigo' },
-  emerald: { bg: 'bg-emerald-500', text: 'text-emerald-500', border: 'border-emerald-400', ring: 'focus:ring-emerald-400', lightBg: 'bg-emerald-100', lightText: 'text-emerald-700', shadow: 'shadow-emerald-200', hover: 'hover:bg-emerald-600', activeRing: 'ring-emerald-50', name: 'Emerald' },
-  amber: { bg: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-400', ring: 'focus:ring-amber-400', lightBg: 'bg-amber-100', lightText: 'text-amber-700', shadow: 'shadow-amber-200', hover: 'hover:bg-amber-600', activeRing: 'ring-amber-50', name: 'Amber' },
+  rose: { bg: 'bg-rose-500', text: 'text-rose-500', border: 'border-rose-400', ring: 'focus:ring-rose-400', lightBg: 'bg-rose-100', lightText: 'text-rose-600', shadow: 'shadow-rose-200', hover: 'hover:bg-rose-600', activeRing: 'ring-rose-50', name: 'Rose', color: '#f43f5e' },
+  indigo: { bg: 'bg-indigo-600', text: 'text-indigo-600', border: 'border-indigo-500', ring: 'focus:ring-indigo-500', lightBg: 'bg-indigo-100', lightText: 'text-indigo-700', shadow: 'shadow-indigo-200', hover: 'hover:bg-indigo-700', activeRing: 'ring-indigo-50', name: 'Indigo', color: '#4f46e5' },
+  emerald: { bg: 'bg-emerald-500', text: 'text-emerald-500', border: 'border-emerald-400', ring: 'focus:ring-emerald-400', lightBg: 'bg-emerald-100', lightText: 'text-emerald-700', shadow: 'shadow-emerald-200', hover: 'hover:bg-emerald-600', activeRing: 'ring-emerald-50', name: 'Emerald', color: '#10b981' },
+  amber: { bg: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-400', ring: 'focus:ring-amber-400', lightBg: 'bg-amber-100', lightText: 'text-amber-700', shadow: 'shadow-amber-200', hover: 'hover:bg-amber-600', activeRing: 'ring-amber-50', name: 'Amber', color: '#f59e0b' },
   zebra: { bg: 'bg-zinc-800', text: 'text-zinc-800', border: 'border-zinc-500', ring: 'focus:ring-zinc-600', lightBg: 'bg-zinc-200', lightText: 'text-zinc-800', shadow: 'shadow-zinc-400', hover: 'hover:bg-zinc-900', activeRing: 'ring-zinc-100', name: 'Zebra', style: { backgroundImage: 'repeating-linear-gradient(45deg, #27272a, #27272a 15px, #3f3f46 15px, #3f3f46 30px)' } },
   grid: { bg: 'bg-slate-700', text: 'text-slate-700', border: 'border-slate-500', ring: 'focus:ring-slate-500', lightBg: 'bg-slate-200', lightText: 'text-slate-800', shadow: 'shadow-slate-400', hover: 'hover:bg-slate-800', activeRing: 'ring-slate-100', name: 'Grid', style: { backgroundImage: 'linear-gradient(to right, #475569 1px, transparent 1px), linear-gradient(to bottom, #475569 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundColor: '#334155' } },
   dots: { bg: 'bg-cyan-700', text: 'text-cyan-700', border: 'border-cyan-500', ring: 'focus:ring-cyan-500', lightBg: 'bg-cyan-200', lightText: 'text-cyan-800', shadow: 'shadow-cyan-400', hover: 'hover:bg-cyan-800', activeRing: 'ring-cyan-100', name: 'Dots', style: { backgroundImage: 'radial-gradient(#06b6d4 2px, transparent 2px)', backgroundSize: '20px 20px', backgroundColor: '#0e7490' } }
@@ -292,7 +292,6 @@ export default function App() {
   useEffect(() => {
     const checkStatus = () => {
       setIsPortrait(window.innerHeight > window.innerWidth);
-      // Determine if launched as standalone PWA or in native fullscreen
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
       const isFull = !!document.fullscreenElement || isStandalone;
       setIsFullscreen(isFull);
@@ -487,16 +486,14 @@ export default function App() {
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Maximize size={32} />
             </div>
-            <h2 className="text-2xl font-black uppercase tracking-tighter mb-4 leading-none">ENTER FULL SCREEN</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 leading-none">ENTER FULL SCREEN</h2>
             <p className="text-stone-500 font-bold text-sm mb-8 leading-relaxed">Bluff requires a dedicated full-screen experience to provide the best game console and whiteboard feel.</p>
             
             <div className="space-y-4">
-                {/* Standard Fullscreen Button (Works for Android/Chrome/PC) */}
                 <button onClick={toggleFullscreen} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all">
                    ENABLE FULLSCREEN
                 </button>
 
-                {/* iPhone Safari Mandatory Step */}
                 <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 text-left">
                     <div className="flex items-center gap-2 mb-2 text-stone-700">
                         <Smartphone size={16} className="shrink-0" />
@@ -535,13 +532,13 @@ export default function App() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md mx-auto">
-          <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter">BLUFF</h1>
+          <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase">BLUFF</h1>
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
-            <div className="flex gap-2">
-              <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="flex-1 p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
-              <button onClick={joinRoom} className="px-8 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join</button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full sm:flex-1 p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
+              <button onClick={joinRoom} className="w-full sm:w-auto px-10 py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join</button>
             </div>
             {error && <p className="text-red-500 text-center font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
           </div>
@@ -571,23 +568,28 @@ export default function App() {
             <div className="flex justify-between items-center bg-black/20 p-6 rounded-[2rem] backdrop-blur-sm shrink-0">
                <div className="leading-none">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
-                    <h2 className="text-4xl sm:text-5xl font-black drop-shadow-md">{gameState.code}</h2>
+                    <h2 className="text-5xl font-black drop-shadow-md">{gameState.code}</h2>
                </div>
                {isHost && <button onClick={startRound} className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all uppercase tracking-tighter">Start Game</button>}
             </div>
 
             {isHost ? (
-               <div className="bg-stone-900/60 p-6 rounded-[2rem] shadow-xl backdrop-blur-md border border-stone-800 flex flex-col gap-5 shrink-0">
+               <div className="bg-stone-900/60 p-6 rounded-[2rem] shadow-xl backdrop-blur-md border border-stone-800 flex flex-col gap-6 shrink-0">
                   <label className="flex items-center justify-between bg-white/10 p-4 rounded-2xl cursor-pointer hover:bg-white/20 transition-all border border-white/5">
                     <span className="font-bold flex items-center gap-3 text-sm"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> include Sus questions</span>
                     <div className={`w-14 h-7 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-5 h-5 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-7' : 'translate-x-0'}`} /></div>
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
                   
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {Object.keys(THEMES).map(k => (
-                      <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} style={THEMES[k].style} className={`w-10 h-10 rounded-full border-2 transition-all ${gameState.theme === k ? 'border-white scale-110 shadow-lg ring-4 ring-white/20' : 'border-transparent opacity-40'}`} />
-                    ))}
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center">Room Theme</span>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {Object.keys(THEMES).map(k => (
+                        <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
+                          style={THEMES[k].style || { backgroundColor: THEMES[k].color }} 
+                          className={`w-12 h-12 rounded-full border-4 transition-all shadow-md ${gameState.theme === k ? 'border-white scale-110 shadow-lg ring-4 ring-white/20' : 'border-stone-800/40 hover:scale-105'}`} />
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10">
@@ -611,7 +613,7 @@ export default function App() {
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-4 mb-4 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm`}>{p.name[0]}</div><span className="truncate flex-1">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70">You</span>}</div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm`}>{p.name[0]}</div><span className="truncate flex-1">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
                 ))}
              </div>
              <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shrink-0 transition-all active:scale-95`}>
@@ -632,7 +634,7 @@ export default function App() {
       <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden">
         <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
           <div className="flex-1 pr-6 min-w-0">
-             <span className="text-[10px] font-black text-stone-400 block uppercase leading-none mb-1 tracking-widest">Secret Prompt</span>
+             <span className="text-[10px] font-black text-stone-400 block uppercase leading-none mb-1 tracking-widest font-black">Secret Prompt</span>
              <span className={`text-sm sm:text-xl font-black leading-tight truncate block ${t.text}`}>{prompt}</span>
           </div>
           <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200">{gameState.timer}s</div>
@@ -641,7 +643,7 @@ export default function App() {
            <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
         </div>
         <div className="px-5 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
-          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
+          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
           {!isFrozen ? (
             <button onClick={toggleReady} className={`px-10 py-3 rounded-2xl font-black text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'}`}>
                 {isReady ? "LOCKED IN" : "I'M DONE"}
@@ -667,11 +669,12 @@ export default function App() {
                <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                  className={`bg-white p-4 rounded-[2rem] border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                  <div className="aspect-video bg-stone-50 rounded-2xl mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                   {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[10px] uppercase text-center p-4 tracking-tighter leading-none">NO DRAWING SUBMITTED</div>}
+                   {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING SUBMITTED</div>}
                  </div>
                  <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
-                    <span className="font-black text-sm text-stone-800 truncate">{p.name} {p.id === localPlayerId && "(You)"}</span>
+                    <span className="font-black text-sm text-stone-800 truncate flex-1">{p.name}</span>
+                    {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0">(You)</span>}
                  </div>
                </button>
              ))}
@@ -707,19 +710,19 @@ export default function App() {
           </div>
           <div className="w-full landscape:w-[400px] bg-white rounded-[3rem] p-8 shadow-2xl border border-stone-100 flex flex-col">
             <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4 shrink-0">
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
+                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
+                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
             </div>
             <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
               {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                 <div key={p.id} className={`flex justify-between items-center p-4 rounded-2xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border} scale-105 shadow-md` : 'bg-stone-50 border border-stone-100'}`}>
                     <div className="flex items-center gap-4 overflow-hidden">
-                        <span className="font-black text-stone-300 text-sm w-4 shrink-0">{i+1}</span>
+                        <span className="font-black text-stone-300 text-sm w-4 shrink-0 font-black">{i+1}</span>
                         <span className={`font-black truncate text-sm ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         <Trophy size={18} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
-                        <span className="font-black text-stone-800 text-xl">{p.score}</span>
+                        <span className="font-black text-stone-800 text-xl font-black">{p.score}</span>
                     </div>
                 </div>
               ))}
