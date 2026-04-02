@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize, AlertCircle, Share
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize, AlertCircle, Share, Info
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -266,7 +266,6 @@ const DrawingCanvas = ({ onSave, disabled, initialData }) => {
 export default function App() {
   const [user, setUser] = useState(null);
   const [isPortrait, setIsPortrait] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const timerRef = useRef(null);
   const [localPlayerId] = useState(() => {
     const stored = sessionStorage.getItem('bluff_player_id');
@@ -290,29 +289,15 @@ export default function App() {
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
 
   useEffect(() => {
-    const checkStatus = () => {
+    const checkOrientation = () => {
       setIsPortrait(window.innerHeight > window.innerWidth);
-      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-      const isFull = !!document.fullscreenElement || isStandalone;
-      setIsFullscreen(isFull);
     };
-    checkStatus();
-    window.addEventListener('resize', checkStatus);
-    document.addEventListener('fullscreenchange', checkStatus);
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
     return () => {
-      window.removeEventListener('resize', checkStatus);
-      document.removeEventListener('fullscreenchange', checkStatus);
+      window.removeEventListener('resize', checkOrientation);
     };
   }, []);
-
-  const toggleFullscreen = () => {
-    const docElm = document.documentElement;
-    if (docElm.requestFullscreen) {
-      docElm.requestFullscreen().catch(() => {});
-    } else if (docElm.webkitRequestFullscreen) {
-      docElm.webkitRequestFullscreen();
-    }
-  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -480,42 +465,6 @@ export default function App() {
 
   const t = THEMES[gameState?.theme] || THEMES.rose;
 
-  // --- MANDATORY FULLSCREEN OVERLAY ---
-  if (!isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-[2000] bg-slate-900 flex flex-col items-center justify-center p-6 text-white overflow-hidden">
-        <div className="bg-white p-6 sm:p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-stone-800 text-center">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Maximize size={32} />
-            </div>
-            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 leading-none">ENTER FULL SCREEN</h2>
-            <p className="text-stone-500 font-bold text-sm mb-8 leading-relaxed">Bluff requires a dedicated full-screen experience to provide the best game console and whiteboard feel.</p>
-            
-            <div className="space-y-4">
-                <button onClick={toggleFullscreen} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all">
-                   ENABLE FULLSCREEN
-                </button>
-
-                <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 text-left">
-                    <div className="flex items-center gap-2 mb-2 text-stone-700">
-                        <Smartphone size={16} className="shrink-0" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">iPhone Mandatory Step</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 leading-tight mb-3">
-                        iPhone Safari physically blocks full-screen apps unless launched from your Home Screen.
-                    </p>
-                    <ol className="text-[10px] text-stone-600 space-y-1.5 font-bold">
-                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">1</div> <span>Tap the <Share size={10} className="inline mx-1 text-blue-500" /> icon at the bottom.</span></li>
-                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">2</div> <span>Select <span className="text-blue-600">"Add to Home Screen"</span>.</span></li>
-                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">3</div> <span>Open <span className="text-blue-600">"Bluff"</span> from your apps.</span></li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-      </div>
-    );
-  }
-
   // --- WHITEBOARD LOCK (Only Landscape for Drawing & Reveal) ---
   if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
     return (
@@ -524,7 +473,7 @@ export default function App() {
           <RotateCw size={96} className="text-blue-500 animate-spin-slow opacity-20 absolute inset-0" />
           <Smartphone size={80} className="text-white absolute inset-0 m-auto" />
         </div>
-        <h2 className="text-2xl font-black uppercase mb-2 leading-none">TURN SIDEWAYS!</h2>
+        <h2 className="text-2xl font-black uppercase mb-2 leading-none tracking-tighter">TURN SIDEWAYS!</h2>
         <p className="text-stone-400 font-bold text-sm">Whiteboard time. Flip your phone sideways to draw and reveal.</p>
       </div>
     );
@@ -540,9 +489,20 @@ export default function App() {
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
             <div className="flex flex-col gap-2">
               <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
-              <button onClick={joinRoom} className="w-full px-8 py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join Room</button>
+              <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-xs">Join Room</button>
             </div>
             {error && <p className="text-red-500 text-center font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
+            
+            {/* NON-MANDATORY TIP */}
+            <div className="pt-6 border-t border-stone-100 flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                <Info size={20} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase text-blue-600 tracking-wider mb-0.5">Mobile Player Tip</p>
+                <p className="text-[11px] text-stone-500 leading-tight">For the best experience, tap <span className="font-bold text-stone-700">"Add to Home Screen"</span> in your browser menu to play Bluff like a native app.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -556,10 +516,10 @@ export default function App() {
           <div className="fixed inset-0 z-[2050] bg-black/70 backdrop-blur-md flex items-center justify-center p-6">
              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
                  <Flame size={64} className="text-rose-500 mx-auto mb-4 animate-bounce" />
-                 <h3 className="text-xl font-black text-stone-800 mb-6">{gameState.susRequest.requesterName} wants Sus addition!</h3>
+                 <h3 className="text-xl font-black text-stone-800 mb-6 tracking-tight leading-tight">{gameState.susRequest.requesterName} wants Sus addition!</h3>
                  <div className="flex gap-3">
-                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95">Skip</button>
-                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95">Enable</button>
+                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95 transition-all">Skip</button>
+                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all">Enable</button>
                  </div>
              </div>
           </div>
@@ -567,16 +527,16 @@ export default function App() {
 
         <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 h-full max-h-[90vh]">
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
-            <div className="flex justify-between items-center bg-black/20 p-6 rounded-[2rem] backdrop-blur-sm shrink-0">
+            <div className="flex justify-between items-center bg-black/20 p-6 rounded-[2rem] backdrop-blur-sm shrink-0 border border-white/5">
                <div className="leading-none">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
-                    <h2 className="text-5xl font-black drop-shadow-md">{gameState.code}</h2>
+                    <h2 className="text-5xl font-black drop-shadow-md tracking-tighter">{gameState.code}</h2>
                </div>
                {isHost && (
                  <button 
                    onClick={startRound} 
                    disabled={gameState.players.length < 2} 
-                   className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all uppercase tracking-tighter"
+                   className={`px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all uppercase tracking-tighter text-sm sm:text-base`}
                  >
                     {gameState.players.length < 2 ? 'Need 2 Players' : 'Start Game'}
                  </button>
@@ -586,7 +546,7 @@ export default function App() {
             {isHost ? (
                <div className="bg-stone-900/60 p-6 rounded-[2rem] shadow-xl backdrop-blur-md border border-stone-800 flex flex-col gap-6 shrink-0">
                   <label className="flex items-center justify-between bg-white/10 p-4 rounded-2xl cursor-pointer hover:bg-white/20 transition-all border border-white/5">
-                    <span className="font-bold flex items-center gap-3 text-sm"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> include Sus questions</span>
+                    <span className="font-bold flex items-center gap-3 text-sm tracking-tight"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> include Sus questions</span>
                     <div className={`w-14 h-7 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-5 h-5 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-7' : 'translate-x-0'}`} /></div>
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
@@ -603,7 +563,7 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10">
-                    <span className="text-xs font-black uppercase tracking-widest text-white/60">Points to win: {gameState.targetScore || 5}</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-white/60">Win At: {gameState.targetScore || 5} pts</span>
                     <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-32 accent-white" />
                   </div>
                </div>
@@ -611,9 +571,9 @@ export default function App() {
                <div className="bg-stone-900/40 p-6 rounded-[2rem] border border-white/10 backdrop-blur-md flex flex-col gap-4">
                   <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50"><span>Target Score</span><span>{gameState.targetScore || 5}</span></div>
                   {!gameState.susMode ? (
-                    <button onClick={requestSusMode} className="w-full py-5 bg-stone-900/60 hover:bg-stone-900 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-inner"><Flame size={18} /> Request Sus addition</button>
+                    <button onClick={requestSusMode} className="w-full py-5 bg-stone-900/60 hover:bg-stone-900 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-inner active:scale-95"><Flame size={18} /> Request Sus addition</button>
                   ) : (
-                    <div className="w-full py-5 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2"><Flame size={18} /> Sus addition enabled</div>
+                    <div className="w-full py-5 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2 shadow-inner"><Flame size={18} /> Sus addition enabled</div>
                   )}
                </div>
             )}
@@ -623,7 +583,7 @@ export default function App() {
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-4 mb-4 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm`}>{p.name[0]}</div><span className="truncate flex-1">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70 font-black shrink-0">You</span>}</div>
                 ))}
              </div>
              <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shrink-0 transition-all active:scale-95`}>
@@ -635,119 +595,122 @@ export default function App() {
     );
   }
 
-  if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL') {
-    if (!gameState.currentPrompt) return null; // Safety guard to prevent blank screen
-    
-    const isImp = gameState.impostorId === localPlayerId;
-    const prompt = isImp ? gameState.currentPrompt.bluff : gameState.currentPrompt.normal;
-    const isFrozen = gameState.status === 'REVEAL';
-    const isReady = gameState.readyPlayers?.includes(localPlayerId);
-    
-    return (
-      <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden">
-        <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
-          <div className="flex-1 pr-6 min-w-0">
-             <span className="text-[10px] font-black text-stone-400 block uppercase leading-none mb-1 tracking-widest font-black">Secret Prompt</span>
-             <span className={`text-sm sm:text-xl font-black leading-tight truncate block ${t.text}`}>{prompt}</span>
-          </div>
-          <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200">{gameState.timer}s</div>
-        </div>
-        <div className="flex-1 p-1 overflow-hidden">
-           <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
-        </div>
-        <div className="px-5 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
-          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
-          {!isFrozen ? (
-            <button onClick={toggleReady} className={`px-10 py-3 rounded-2xl font-black text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'}`}>
-                {isReady ? "LOCKED IN" : "I'M DONE"}
-            </button>
-          ) : (
-            isHost && <button onClick={goToVoting} className={`px-12 py-3 ${t.bg} text-white rounded-2xl font-black text-sm shadow-xl active:scale-90 uppercase tracking-tighter`}>Reveal & Vote</button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // --- GAMEPLAY STATES (DRAWING, VOTING, RESULTS) ---
+  if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL' || gameState.status === 'VOTING' || gameState.status === 'RESULTS' || gameState.status === 'COUNTDOWN') {
+    // Safety check: If prompt data is missing during a transition, show a quick loader instead of crashing to blank
+    if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN' && gameState.status !== 'RESULTS') {
+      return <div className={`fixed inset-0 ${t.bg} flex items-center justify-center text-white text-xl font-black animate-pulse`}>LOADING NEXT ROUND...</div>;
+    }
 
-  if (gameState.status === 'VOTING') {
-    if (!gameState.currentPrompt) return null;
-
-    return (
-      <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-6xl h-full flex flex-col">
-           <div className="mb-8 shrink-0">
-                <h2 className="text-4xl font-black text-stone-800 tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
-                <p className="text-stone-400 font-bold text-sm">Choose the player who had the fake prompt: <span className={`font-black not-italic ${t.text} uppercase`}>"{gameState.currentPrompt.normal}"</span></p>
-           </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-6 flex-1">
-             {gameState.players.map(p => (
-               <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
-                 className={`bg-white p-4 rounded-[2rem] border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
-                 <div className="aspect-video bg-stone-50 rounded-2xl mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                   {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING SUBMITTED</div>}
-                 </div>
-                 <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
-                    <span className="font-black text-sm text-stone-800 truncate flex-1">{p.name}</span>
-                    {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0">(You)</span>}
-                 </div>
-               </button>
-             ))}
-           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (gameState.status === 'COUNTDOWN') {
-    return (
-      <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000]`} style={t.style}>
-        <h2 className="text-2xl font-black text-white/90 tracking-widest uppercase mb-8 drop-shadow-md bg-black/20 px-8 py-3 rounded-full backdrop-blur-sm">Calculating Results...</h2>
-        <div className="text-[15rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
-      </div>
-    );
-  }
-
-  if (gameState.status === 'RESULTS') {
-    if (!gameState.currentPrompt) return null;
-
-    const imp = gameState.players.find(p => p.id === gameState.impostorId);
-    const maxScore = Math.max(...gameState.players.map(p => p.score));
-    const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
-    const winners = gameState.players.filter(p => p.score === maxScore && p.score >= (gameState.targetScore || 5));
-    
-    return (
-      <div className="min-h-[100dvh] bg-stone-50 p-6 flex items-center justify-center overflow-y-auto">
-        <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-8 items-center landscape:items-stretch">
-          <div className="flex-1 flex flex-col justify-center text-center">
-            {isGameOver && <div className="bg-amber-400 text-amber-900 p-8 rounded-[2.5rem] mb-8 shadow-2xl border-8 border-amber-200 animate-bounce"><h2 className="text-3xl font-black uppercase tracking-widest mb-2 leading-none">🏆 WE HAVE A WINNER!</h2><p className="font-black text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
-            <div className={`${t.text} font-black uppercase tracking-widest text-xs mb-3 opacity-60`}>The Impostor Was</div>
-            <h2 className="text-6xl sm:text-8xl font-black text-stone-800 mb-10 drop-shadow-lg tracking-tighter uppercase">{imp?.name}</h2>
-            {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[2rem] font-black text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
-          </div>
-          <div className="w-full landscape:w-[400px] bg-white rounded-[3rem] p-8 shadow-2xl border border-stone-100 flex flex-col">
-            <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4 shrink-0">
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black text-stone-400">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
-                <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black text-stone-400">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
+    if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL') {
+      const isImp = gameState.impostorId === localPlayerId;
+      const prompt = isImp ? gameState.currentPrompt.bluff : gameState.currentPrompt.normal;
+      const isFrozen = gameState.status === 'REVEAL';
+      const isReady = gameState.readyPlayers?.includes(localPlayerId);
+      
+      return (
+        <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden">
+          <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
+            <div className="flex-1 pr-6 min-w-0">
+               <span className="text-[10px] font-black text-stone-400 block uppercase leading-none mb-1 tracking-widest font-black">Secret Prompt</span>
+               <span className={`text-sm sm:text-xl font-black leading-tight truncate block ${t.text} tracking-tight`}>{prompt}</span>
             </div>
-            <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
-                <div key={p.id} className={`flex justify-between items-center p-4 rounded-2xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border} scale-105 shadow-md` : 'bg-stone-50 border border-stone-100'}`}>
-                    <div className="flex items-center gap-4 overflow-hidden">
-                        <span className="font-black text-stone-300 text-sm w-4 shrink-0 font-black">{i+1}</span>
-                        <span className={`font-black truncate text-sm ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        <Trophy size={18} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
-                        <span className="font-black text-stone-800 text-xl font-black">{p.score}</span>
-                    </div>
-                </div>
-              ))}
+            <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200">{gameState.timer}s</div>
+          </div>
+          <div className="flex-1 p-1 overflow-hidden">
+             <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
+          </div>
+          <div className="px-5 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
+            <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
+            {!isFrozen ? (
+              <button onClick={toggleReady} className={`px-10 py-3 rounded-2xl font-black text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'}`}>
+                  {isReady ? "LOCKED IN" : "I'M DONE"}
+              </button>
+            ) : (
+              isHost && <button onClick={goToVoting} className={`px-12 py-3 ${t.bg} text-white rounded-2xl font-black text-sm shadow-xl active:scale-90 uppercase tracking-tighter`}>Reveal & Vote</button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (gameState.status === 'VOTING') {
+      return (
+        <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center">
+          <div className="w-full max-w-6xl h-full flex flex-col">
+             <div className="mb-8 shrink-0">
+                  <h2 className="text-4xl font-black text-stone-800 tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
+                  <p className="text-stone-400 font-bold text-sm">Target Prompt: <span className={`font-black not-italic ${t.text} uppercase`}>"{gameState.currentPrompt.normal}"</span></p>
+             </div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-6 flex-1">
+               {gameState.players.map(p => (
+                 <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
+                   className={`bg-white p-4 rounded-[2rem] border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
+                   <div className="aspect-video bg-stone-50 rounded-2xl mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING SUBMITTED</div>}
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
+                      <span className="font-black text-sm text-stone-800 truncate flex-1 tracking-tight">{p.name}</span>
+                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
+                   </div>
+                 </button>
+               ))}
+             </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (gameState.status === 'COUNTDOWN') {
+      return (
+        <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000]`} style={t.style}>
+          <h2 className="text-2xl font-black text-white/90 tracking-widest uppercase mb-8 drop-shadow-md bg-black/20 px-8 py-3 rounded-full backdrop-blur-sm">Calculating Results...</h2>
+          <div className="text-[15rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
+        </div>
+      );
+    }
+
+    if (gameState.status === 'RESULTS') {
+      const imp = gameState.players.find(p => p.id === gameState.impostorId);
+      const maxScore = Math.max(...gameState.players.map(p => p.score));
+      const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
+      const winners = gameState.players.filter(p => p.score === maxScore && p.score >= (gameState.targetScore || 5));
+      
+      return (
+        <div className="min-h-[100dvh] bg-stone-50 p-6 flex items-center justify-center overflow-y-auto">
+          <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-8 items-center landscape:items-stretch">
+            <div className="flex-1 flex flex-col justify-center text-center">
+              {isGameOver && <div className="bg-amber-400 text-amber-900 p-8 rounded-[2.5rem] mb-8 shadow-2xl border-8 border-amber-200 animate-bounce"><h2 className="text-3xl font-black uppercase tracking-widest mb-2 leading-none">🏆 WE HAVE A WINNER!</h2><p className="font-black text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
+              <div className={`${t.text} font-black uppercase tracking-widest text-xs mb-3 opacity-60`}>The Impostor Was</div>
+              <h2 className="text-6xl sm:text-8xl font-black text-stone-800 mb-10 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
+              {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[2rem] font-black text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
+            </div>
+            <div className="w-full landscape:w-[400px] bg-white rounded-[3rem] p-8 shadow-2xl border border-stone-100 flex flex-col">
+              <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4 shrink-0">
+                  <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
+              </div>
+              <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
+                  <div key={p.id} className={`flex justify-between items-center p-4 rounded-2xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border} scale-105 shadow-md` : 'bg-stone-50 border border-stone-100'}`}>
+                      <div className="flex items-center gap-4 overflow-hidden">
+                          <span className="font-black text-stone-300 text-sm w-4 shrink-0 font-black">{i+1}</span>
+                          <span className={`font-black truncate text-sm tracking-tight ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                          <Trophy size={18} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
+                          <span className="font-black text-stone-800 text-xl font-black leading-none">{p.score}</span>
+                      </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
+
   return null;
 }
