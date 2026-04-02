@@ -462,7 +462,7 @@ export default function App() {
           <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase">BLUFF</h1>
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
-            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
+            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME1</button>
             
             {/* FIX: Vertically stacked Join section for small screens */}
             <div className="flex flex-col gap-3">
