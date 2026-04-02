@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2, LogOut, X
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2, LogOut, X, MessageCircle
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -277,7 +277,6 @@ export default function App() {
 
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
 
-  // --- DEEP LINKING LOGIC FIX: USE QUERY PARAMS TO AVOID 404 ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('room');
@@ -361,7 +360,8 @@ export default function App() {
     if (isHost && gameState?.status === 'DRAWING') {
       if (gameState.readyPlayers?.length === gameState.players.length && gameState.players.length > 0) {
         if (timerRef.current) clearInterval(timerRef.current);
-        updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 5 }); 
+        // User requested 10 second countdown during reveal for discussion
+        updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 10 }); 
       }
     }
   }, [gameState?.readyPlayers, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
@@ -391,7 +391,6 @@ export default function App() {
 
   const copyInviteLink = () => {
     const el = document.createElement('textarea');
-    // Generates a link using Query Param ?room=code to avoid Vercel 404
     el.value = window.location.origin + window.location.pathname + '?room=' + gameState.code;
     document.body.appendChild(el);
     el.select();
@@ -440,7 +439,6 @@ export default function App() {
     
     if (available.length === 0) {
       await updateDoc(getRoomRef(joinedRoomCode), { usedPrompts: [] });
-      pool = pool;
     } else {
       pool = available;
     }
@@ -511,16 +509,18 @@ export default function App() {
   };
 
   const leaveGame = async () => {
-    if (joinedRoomCode && user) {
-        const playerToRemove = gameState?.players.find(p => p.id === localPlayerId);
+    // 1. If joined, remove self from the list
+    if (joinedRoomCode && user && gameState) {
+        const playerToRemove = gameState.players.find(p => p.id === localPlayerId);
         if (playerToRemove) {
             await updateDoc(getRoomRef(joinedRoomCode), { players: arrayRemove(playerToRemove) });
         }
     }
-    // Clear Query Params and state
+    // 2. Clear state and URL
     window.history.replaceState(null, '', window.location.pathname);
     setJoinedRoomCode('');
     setGameState(null);
+    setRoomCode('');
     setShowLeaveConfirm(false);
   };
 
@@ -542,7 +542,7 @@ export default function App() {
         <p className="text-stone-500 font-bold mb-8 leading-tight">Are you sure you want to exit to the home screen?</p>
         <div className="flex gap-3">
           <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 py-4 bg-stone-100 font-black rounded-2xl active:scale-95">STAY</button>
-          <button onClick={leaveGame} className="flex-1 py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-200 active:scale-95">LEAVE</button>
+          <button onClick={leaveGame} className="flex-1 py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-200 active:scale-95 text-sm uppercase">LEAVE</button>
         </div>
       </div>
     </div>
@@ -572,7 +572,7 @@ export default function App() {
     );
   }
 
-  // --- LOBBY SCREEN (One-Page Layout) ---
+  // --- LOBBY SCREEN ---
   if (gameState.status === 'LOBBY') {
     return (
       <div className={`fixed inset-0 ${t.bg} p-4 sm:p-8 text-white flex flex-col items-center justify-center overflow-hidden`} style={t.style}>
@@ -592,7 +592,7 @@ export default function App() {
         <div className="w-full max-w-5xl h-full flex flex-col landscape:flex-row gap-4 sm:gap-6 overflow-hidden items-center justify-center">
           <div className="flex flex-col gap-4 w-full landscape:w-1/2 overflow-hidden shrink-0">
             <div className="bg-white/10 p-4 sm:p-6 rounded-[2rem] border border-white/10 flex flex-col gap-4 text-center shadow-lg">
-               <div className="leading-none">
+               <div className="leading-none text-white">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
                     <h2 className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter">{gameState.code}</h2>
                </div>
@@ -606,13 +606,13 @@ export default function App() {
             {isHost ? (
                <div className="bg-white/10 p-4 sm:p-6 rounded-[2rem] border border-white/10 flex flex-col gap-5 shadow-lg">
                   <label className="flex items-center justify-between bg-black/20 p-3 sm:p-4 rounded-2xl cursor-pointer hover:bg-black/30 transition-all border border-white/5 shrink-0">
-                    <span className="font-bold flex items-center gap-3 text-sm tracking-tight font-black uppercase leading-none"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> Sus Mode</span>
+                    <span className="font-bold flex items-center gap-3 text-sm tracking-tight font-black uppercase leading-none text-white"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> Sus Mode</span>
                     <div className={`w-14 h-7 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-5 h-5 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-7' : 'translate-x-0'}`} /></div>
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
                   
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center font-black">Room Theme</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center font-black text-white">Room Theme</span>
                     <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
@@ -622,8 +622,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10 shrink-0 font-black">
-                    <span className="text-[10px] uppercase tracking-widest text-white/60">Win At: {gameState.targetScore || 5} pts</span>
+                  <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10 shrink-0 font-black text-white">
+                    <span className="text-[10px] uppercase tracking-widest opacity-60">Win At: {gameState.targetScore || 5} pts</span>
                     <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-24 sm:w-32 accent-white" />
                   </div>
                </div>
@@ -633,7 +633,7 @@ export default function App() {
                   {!gameState.susMode ? (
                     <button onClick={requestSusMode} className="w-full py-4 bg-black/20 hover:bg-black/30 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-inner active:scale-95 font-black uppercase"><Flame size={18} /> Request Sus Mode</button>
                   ) : (
-                    <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2 font-black uppercase">Sus Mode Enabled</div>
+                    <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2 font-black uppercase tracking-widest">Sus Mode Enabled</div>
                   )}
                </div>
             )}
@@ -673,24 +673,33 @@ export default function App() {
       const promptText = isImp ? gameState.currentPrompt?.bluff : gameState.currentPrompt?.normal;
       const isReady = gameState.readyPlayers?.includes(localPlayerId);
       const isRevealing = gameState.status === 'REVEAL';
+      const showLabel = isRevealing && revealStep === 1;
       
       return (
         <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden text-stone-800">
-          {/* Header/Question */}
+          {/* Header */}
           <div className={`bg-white px-5 py-3 border-b border-stone-100 flex justify-between items-center z-10 shrink-0 transition-all duration-700 ${isRevealing ? 'bg-stone-50 border-none' : ''}`}>
              <div className="flex-1 pr-6 min-w-0">
                <span className={`text-[9px] font-black text-stone-400 block uppercase mb-1 tracking-widest font-black transition-opacity ${isRevealing && revealStep === 0 ? 'opacity-0' : 'opacity-100'}`}>
                  {isRevealing ? "Group Question" : "Secret Prompt"}
                </span>
-               {/* No Truncate: Dynamic Wrapping Question */}
-               <span className={`font-black break-words whitespace-normal leading-tight block ${t.text} transition-all duration-700 ${isRevealing && revealStep === 0 ? 'text-2xl sm:text-3xl text-center fixed inset-0 flex items-center justify-center px-8 text-stone-900 bg-white z-[100]' : 'text-sm sm:text-lg'}`}>
-                  {isRevealing && revealStep === 0 ? `Question: ${gameState.currentPrompt?.normal}` : (isRevealing ? gameState.currentPrompt?.normal : promptText)}
+               <span className={`font-black break-words whitespace-normal leading-tight block ${t.text} transition-all duration-700 ${isRevealing && revealStep === 0 ? 'text-2xl sm:text-4xl text-center fixed inset-0 flex items-center justify-center px-10 text-stone-900 bg-white z-[100]' : 'text-sm sm:text-lg'}`}>
+                  {isRevealing && revealStep === 0 ? `QUESTION: ${gameState.currentPrompt?.normal}` : (isRevealing ? gameState.currentPrompt?.normal : promptText)}
                </span>
              </div>
              {!isRevealing && (
                <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0 font-black">{gameState.timer}s</div>
              )}
           </div>
+
+          {/* Time to Discuss Label */}
+          {showLabel && (
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+                <div className="bg-amber-400 text-amber-900 px-6 py-2 rounded-full font-black text-sm uppercase shadow-xl flex items-center gap-2 border-2 border-amber-200">
+                    <MessageCircle size={16} /> Time to discuss!
+                </div>
+            </div>
+          )}
 
           {/* Whiteboard */}
           <div className={`flex-1 overflow-hidden transition-opacity duration-500 ${isRevealing && revealStep === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
@@ -709,9 +718,13 @@ export default function App() {
           {isRevealing && isHost && revealStep === 1 && (
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full px-6 flex justify-center z-[110]">
               {gameState.timer > 0 ? (
-                <div className="px-10 py-3.5 bg-stone-200 text-stone-500 rounded-2xl font-black uppercase text-xs tracking-widest font-black">Wait to Vote ({gameState.timer}s)</div>
+                <div className="px-10 py-4 bg-stone-200 text-stone-400 rounded-2xl font-black uppercase text-xs tracking-widest shadow-inner border border-stone-100">
+                   Wait to Vote ({gameState.timer}s)
+                </div>
               ) : (
-                <button onClick={goToVoting} className="px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-90 uppercase tracking-widest transition-all font-black">Go to Voting</button>
+                <button onClick={goToVoting} className="px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-95 hover:scale-105 uppercase tracking-widest transition-all font-black border-2 border-white/20">
+                    REVEAL VOTING PAGE
+                </button>
               )}
             </div>
           )}
@@ -727,7 +740,7 @@ export default function App() {
           <div className="w-full max-w-6xl h-full flex flex-col">
              <div className="mb-6 shrink-0 text-center sm:text-left">
                   <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase font-black">Who's Lying?</h2>
-                  <p className="text-stone-400 font-bold text-xs sm:text-sm leading-tight">Target Question: <span className={`font-black not-italic break-words ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
+                  <p className="text-stone-400 font-bold text-xs sm:text-sm leading-tight font-bold">Target Question: <span className={`font-black not-italic break-words ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 flex-1">
                {gameState.players.map(p => (
@@ -772,7 +785,7 @@ export default function App() {
           <div className="w-full max-w-md flex flex-col gap-6">
             {isGameOver && (
                <div className="bg-amber-400 text-amber-900 p-6 rounded-[2.5rem] shadow-2xl border-4 border-amber-200 animate-bounce text-center">
-                  <h2 className="text-2xl font-black uppercase mb-1 font-black">🏆 WINNER!</h2>
+                  <h2 className="text-2xl font-black uppercase mb-1 font-black leading-none">🏆 WE HAVE A WINNER!</h2>
                   <p className="font-black text-xl font-black">{winners.map(w => w.name).join(' & ')}</p>
                </div>
             )}
@@ -784,19 +797,19 @@ export default function App() {
 
             <div className="bg-white rounded-[2rem] p-6 shadow-2xl border border-stone-100 flex flex-col">
               <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words`}>{gameState.currentPrompt?.bluff}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words font-black">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words font-black`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                   <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border}` : 'bg-stone-50'}`}>
                       <div className="flex items-center gap-3 overflow-hidden font-black font-black">
-                          <span className="font-black text-stone-300 text-xs w-4 shrink-0">{i+1}</span>
-                          <span className={`font-black truncate text-sm`}>{p.name}</span>
+                          <span className="font-black text-stone-300 text-xs w-4 shrink-0 font-black">{i+1}</span>
+                          <span className={`font-black truncate text-sm font-black`}>{p.name}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 font-black">
                           <Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
-                          <span className="font-black text-stone-800 text-lg leading-none">{p.score}</span>
+                          <span className="font-black text-stone-800 text-lg leading-none font-black">{p.score}</span>
                       </div>
                   </div>
                 ))}
