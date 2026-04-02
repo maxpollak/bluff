@@ -277,11 +277,12 @@ export default function App() {
 
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
 
-  // --- DEEP LINKING LOGIC ---
+  // --- DEEP LINKING LOGIC FIX: USE QUERY PARAMS TO AVOID 404 ---
   useEffect(() => {
-    const path = window.location.pathname.replace('/', '');
-    if (path.length === 6 && /^\d+$/.test(path)) {
-      setRoomCode(path);
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('room');
+    if (code && code.length === 6 && /^\d+$/.test(code)) {
+      setRoomCode(code);
     }
   }, []);
 
@@ -390,8 +391,8 @@ export default function App() {
 
   const copyInviteLink = () => {
     const el = document.createElement('textarea');
-    // Generates a link with the code in the path
-    el.value = window.location.origin + '/' + gameState.code;
+    // Generates a link using Query Param ?room=code to avoid Vercel 404
+    el.value = window.location.origin + window.location.pathname + '?room=' + gameState.code;
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
@@ -516,8 +517,8 @@ export default function App() {
             await updateDoc(getRoomRef(joinedRoomCode), { players: arrayRemove(playerToRemove) });
         }
     }
-    // Reset URL path
-    window.history.replaceState(null, '', '/');
+    // Clear Query Params and state
+    window.history.replaceState(null, '', window.location.pathname);
     setJoinedRoomCode('');
     setGameState(null);
     setShowLeaveConfirm(false);
@@ -537,7 +538,7 @@ export default function App() {
     <div className="fixed inset-0 z-[2000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 text-stone-800">
       <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full text-center">
         <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertCircle size={32} /></div>
-        <h3 className="text-2xl font-black mb-4 leading-none">LEAVE GAME?</h3>
+        <h3 className="text-2xl font-black mb-4 leading-none uppercase">LEAVE GAME?</h3>
         <p className="text-stone-500 font-bold mb-8 leading-tight">Are you sure you want to exit to the home screen?</p>
         <div className="flex gap-3">
           <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 py-4 bg-stone-100 font-black rounded-2xl active:scale-95">STAY</button>
@@ -552,10 +553,10 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md mx-auto my-auto text-stone-800">
-          <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase font-black">BLUFF</h1>
+          <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase font-black leading-none">BLUFF</h1>
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all font-bold" />
-            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-black leading-none">HOST GAME</button>
+            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-black leading-none uppercase">HOST GAME</button>
             <div className="flex flex-col gap-3">
               <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value.replace(/\D/g, ''))} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all font-bold" />
               <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm tracking-widest font-black leading-none text-center">Join Room</button>
@@ -563,7 +564,7 @@ export default function App() {
             {error && <p className="text-red-500 text-center font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
             <div className="pt-6 border-t border-stone-100 flex items-start gap-3 opacity-60">
               <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0"><Info size={20} /></div>
-              <div className="text-left text-[11px] text-stone-500 leading-tight font-bold">For the best experience, tap <span className="font-bold text-stone-700">"Add to Home Screen"</span> to play Bluff like a native app.</div>
+              <div className="text-left text-[11px] text-stone-500 leading-tight font-bold">For the best experience, tap <span className="font-bold text-stone-700">"Add to Home Screen"</span> in Safari to play Bluff like a native app.</div>
             </div>
           </div>
         </div>
@@ -571,7 +572,7 @@ export default function App() {
     );
   }
 
-  // --- LOBBY SCREEN ---
+  // --- LOBBY SCREEN (One-Page Layout) ---
   if (gameState.status === 'LOBBY') {
     return (
       <div className={`fixed inset-0 ${t.bg} p-4 sm:p-8 text-white flex flex-col items-center justify-center overflow-hidden`} style={t.style}>
@@ -579,10 +580,10 @@ export default function App() {
           <div className="fixed inset-0 z-[2050] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 text-stone-800">
              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
                  <Flame size={64} className="text-rose-500 mx-auto mb-4 animate-bounce" />
-                 <h3 className="text-xl font-black mb-6 tracking-tight leading-tight">{gameState.susRequest.requesterName} wants Sus addition!</h3>
+                 <h3 className="text-xl font-black mb-6 tracking-tight leading-tight font-black">{gameState.susRequest.requesterName} wants Sus addition!</h3>
                  <div className="flex gap-3">
-                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95 transition-all">Skip</button>
-                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all">Enable</button>
+                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95 transition-all uppercase font-black">Skip</button>
+                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all uppercase font-black">Enable</button>
                  </div>
              </div>
           </div>
@@ -611,7 +612,7 @@ export default function App() {
                   </label>
                   
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center">Room Theme</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center font-black">Room Theme</span>
                     <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
@@ -628,24 +629,24 @@ export default function App() {
                </div>
             ) : (
                <div className="bg-white/10 p-6 rounded-[2rem] border border-white/10 flex flex-col gap-4 text-center">
-                  <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50"><span>Points to Win</span><span>{gameState.targetScore || 5}</span></div>
+                  <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50 font-black"><span>Points to Win</span><span>{gameState.targetScore || 5}</span></div>
                   {!gameState.susMode ? (
                     <button onClick={requestSusMode} className="w-full py-4 bg-black/20 hover:bg-black/30 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-inner active:scale-95 font-black uppercase"><Flame size={18} /> Request Sus Mode</button>
                   ) : (
-                    <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2 font-black">Sus Mode Enabled</div>
+                    <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2 font-black uppercase">Sus Mode Enabled</div>
                   )}
                </div>
             )}
           </div>
 
           <div className="flex flex-col flex-1 bg-white rounded-[2rem] p-4 sm:p-6 text-stone-800 shadow-2xl overflow-hidden min-h-[180px] w-full">
-             <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-3 mb-3 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
+             <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-3 mb-3 flex justify-between shrink-0 font-black">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0 leading-none"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black shrink-0`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-1 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0 leading-none font-black"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-1 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
                 ))}
              </div>
-             <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0`}>
+             <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0 font-black uppercase`}>
                 {linkCopied ? <Check size={14} /> : <Copy size={14} />} {linkCopied ? 'Copied!' : 'Copy Room Link'}
              </button>
           </div>
@@ -675,20 +676,23 @@ export default function App() {
       
       return (
         <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden text-stone-800">
+          {/* Header/Question */}
           <div className={`bg-white px-5 py-3 border-b border-stone-100 flex justify-between items-center z-10 shrink-0 transition-all duration-700 ${isRevealing ? 'bg-stone-50 border-none' : ''}`}>
              <div className="flex-1 pr-6 min-w-0">
                <span className={`text-[9px] font-black text-stone-400 block uppercase mb-1 tracking-widest font-black transition-opacity ${isRevealing && revealStep === 0 ? 'opacity-0' : 'opacity-100'}`}>
                  {isRevealing ? "Group Question" : "Secret Prompt"}
                </span>
-               <span className={`font-black break-words whitespace-normal leading-tight block ${t.text} transition-all duration-700 ${isRevealing && revealStep === 0 ? 'text-3xl text-center fixed inset-0 flex items-center justify-center px-8 text-stone-900 bg-white z-[100]' : 'text-sm sm:text-lg'}`}>
+               {/* No Truncate: Dynamic Wrapping Question */}
+               <span className={`font-black break-words whitespace-normal leading-tight block ${t.text} transition-all duration-700 ${isRevealing && revealStep === 0 ? 'text-2xl sm:text-3xl text-center fixed inset-0 flex items-center justify-center px-8 text-stone-900 bg-white z-[100]' : 'text-sm sm:text-lg'}`}>
                   {isRevealing && revealStep === 0 ? `Question: ${gameState.currentPrompt?.normal}` : (isRevealing ? gameState.currentPrompt?.normal : promptText)}
                </span>
              </div>
              {!isRevealing && (
-               <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
+               <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0 font-black">{gameState.timer}s</div>
              )}
           </div>
 
+          {/* Whiteboard */}
           <div className={`flex-1 overflow-hidden transition-opacity duration-500 ${isRevealing && revealStep === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
              <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isReady || isRevealing} initialData={myDrawing} hideTools={isRevealing} />
           </div>
@@ -696,7 +700,7 @@ export default function App() {
           {!isRevealing && (
             <div className="px-5 py-2.5 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Ready</span>
-              <button onClick={toggleReady} className={`px-8 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'} uppercase font-black`}>
+              <button onClick={toggleReady} className={`px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'} uppercase font-black`}>
                   {isReady ? "LOCKED IN" : "SUBMIT"}
               </button>
             </div>
@@ -705,9 +709,9 @@ export default function App() {
           {isRevealing && isHost && revealStep === 1 && (
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full px-6 flex justify-center z-[110]">
               {gameState.timer > 0 ? (
-                <div className="px-10 py-3.5 bg-stone-200 text-stone-500 rounded-2xl font-black uppercase text-xs tracking-widest">Wait to Vote ({gameState.timer}s)</div>
+                <div className="px-10 py-3.5 bg-stone-200 text-stone-500 rounded-2xl font-black uppercase text-xs tracking-widest font-black">Wait to Vote ({gameState.timer}s)</div>
               ) : (
-                <button onClick={goToVoting} className="px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-90 uppercase tracking-widest transition-all">Go to Voting</button>
+                <button onClick={goToVoting} className="px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-90 uppercase tracking-widest transition-all font-black">Go to Voting</button>
               )}
             </div>
           )}
@@ -722,7 +726,7 @@ export default function App() {
         <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center text-stone-800">
           <div className="w-full max-w-6xl h-full flex flex-col">
              <div className="mb-6 shrink-0 text-center sm:text-left">
-                  <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
+                  <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase font-black">Who's Lying?</h2>
                   <p className="text-stone-400 font-bold text-xs sm:text-sm leading-tight">Target Question: <span className={`font-black not-italic break-words ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 flex-1">
@@ -735,7 +739,7 @@ export default function App() {
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} transition-transform group-hover:scale-110`} />
                       <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight font-black">{p.name}</span>
-                      {p.id === localPlayerId && <span className="text-[9px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
+                      {p.id === localPlayerId && <span className="text-[9px] opacity-50 font-black shrink-0 tracking-tighter font-black">(You)</span>}
                    </div>
                  </button>
                ))}
@@ -750,8 +754,8 @@ export default function App() {
     if (gameState.status === 'COUNTDOWN') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000] p-6`} style={t.style}>
-          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center">Calculating Results...</h2>
-          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
+          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center font-black">Calculating Results...</h2>
+          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none font-black">{gameState.timer}</div>
           <LeaveButton />
           <LeaveModal />
         </div>
@@ -768,20 +772,20 @@ export default function App() {
           <div className="w-full max-w-md flex flex-col gap-6">
             {isGameOver && (
                <div className="bg-amber-400 text-amber-900 p-6 rounded-[2.5rem] shadow-2xl border-4 border-amber-200 animate-bounce text-center">
-                  <h2 className="text-2xl font-black uppercase mb-1">🏆 WINNER!</h2>
+                  <h2 className="text-2xl font-black uppercase mb-1 font-black">🏆 WINNER!</h2>
                   <p className="font-black text-xl font-black">{winners.map(w => w.name).join(' & ')}</p>
                </div>
             )}
 
             <div className="text-center py-4">
               <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60 font-black`}>The Impostor Was</div>
-              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
+              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black">{imp?.name}</h2>
             </div>
 
             <div className="bg-white rounded-[2rem] p-6 shadow-2xl border border-stone-100 flex flex-col">
               <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words`}>{gameState.currentPrompt?.bluff}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
