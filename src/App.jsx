@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize, AlertCircle
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -101,7 +101,7 @@ const SUS_PROMPTS = [
   { normal: "What’s something you’d never want someone to say about your penis?", bluff: "What’s something a snail would love to hear?" },
   { normal: "What’s something that would be the worst excuse to avoid sex?", bluff: "What’s the best excuse for not doing your homework?" },
   { normal: "What’s something that would make a hookup immediately awkward?", bluff: "Name a bad person" },
-  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you complement a horse?" },
+  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you compliment a horse?" },
   { normal: "What’s something that would be uncomfortable to hear during sex?", bluff: "What’s something weird to hear in a quiet moment?" },
   { normal: "What’s something that would make a kiss instantly bad?", bluff: "What’s something that would make a first impression bad?" },
   { normal: "What’s something that would be weird to do after sex?", bluff: "What’s something you would want to do after a sad movie" },
@@ -297,24 +297,39 @@ export default function App() {
       setIsPortrait(window.innerHeight > window.innerWidth);
     };
     const checkFullscreen = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      // Browsers consider full-screen differently. We'll check the main Fullscreen API.
+      setIsFullscreen(!!document.fullscreenElement || window.navigator.standalone === true);
     };
     checkOrientation();
+    checkFullscreen();
     window.addEventListener('resize', checkOrientation);
+    window.addEventListener('resize', checkFullscreen);
     document.addEventListener('fullscreenchange', checkFullscreen);
     return () => {
       window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('resize', checkFullscreen);
       document.removeEventListener('fullscreenchange', checkFullscreen);
     };
   }, []);
 
   const toggleFullscreen = () => {
+    const docElm = document.documentElement;
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
+      if (docElm.requestFullscreen) {
+        docElm.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else if (docElm.webkitRequestFullscreen) { /* Safari */
+        docElm.webkitRequestFullscreen();
+      } else if (docElm.msRequestFullscreen) { /* IE11 */
+        docElm.msRequestFullscreen();
+      }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
     }
   };
 
@@ -473,9 +488,48 @@ export default function App() {
     });
   };
 
+  const requestSusMode = async () => {
+    if (!user || isHost) return;
+    await updateDoc(getRoomRef(joinedRoomCode), { susRequest: { requesterName: userName, requesterId: localPlayerId } });
+  };
+
+  const handleSusRequest = async (accept) => {
+    if (!isHost) return;
+    if (accept) {
+      await updateDoc(getRoomRef(joinedRoomCode), { susMode: true, susRequest: null });
+    } else {
+      await updateDoc(getRoomRef(joinedRoomCode), { susRequest: null });
+    }
+  };
+
   const t = THEMES[gameState?.theme] || THEMES.rose;
 
-  // --- DRAWING / REVEAL PHASE ORIENTATION GUARD ---
+  // MANDATORY FULLSCREEN GUARD
+  if (!isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[1000] bg-slate-900 flex flex-col items-center justify-center p-8 text-center text-white">
+        <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-stone-800">
+          <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Maximize size={32} />
+          </div>
+          <h2 className="text-2xl font-black uppercase mb-4 tracking-tighter">Enter Fullscreen</h2>
+          <p className="text-stone-500 font-bold text-sm mb-6">Bluff requires full-screen mode to hide browser bars and provide the best whiteboard experience.</p>
+          
+          <button onClick={toggleFullscreen} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all mb-4">
+            PLAY IN FULLSCREEN
+          </button>
+
+          {/* Special Instruction for iPhone users */}
+          <div className="pt-4 border-t border-stone-100 text-[10px] text-stone-400 font-medium">
+             <p className="mb-2 uppercase font-black text-stone-600">iPhone Players:</p>
+             <p>If the button doesn't work, tap the <span className="bg-stone-100 px-1 rounded">Share</span> icon in Safari and select <span className="font-bold text-stone-600">"Add to Home Screen"</span> to play.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- DRAWING / REVEAL PHASE ORIENTATION GUARD (Sideways Mandatory only for Whiteboard) ---
   if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
     return (
       <div className="fixed inset-0 z-[999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
@@ -495,11 +549,6 @@ export default function App() {
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-md mx-auto">
           <h1 className="text-5xl font-black text-blue-600 italic text-center mb-6 tracking-tighter">BLUFF</h1>
           <div className="space-y-4">
-            {!isFullscreen && (
-              <button onClick={toggleFullscreen} className="w-full py-2 bg-stone-100 text-stone-500 rounded-xl font-bold flex items-center justify-center gap-2 text-xs border border-stone-200">
-                <Maximize size={14} /> Go Fullscreen for best experience
-              </button>
-            )}
             <input type="text" placeholder="Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg shadow-xl active:scale-95 transition-all">HOST</button>
             <div className="flex gap-2">
@@ -528,45 +577,45 @@ export default function App() {
              </div>
           </div>
         )}
-        <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
+        <div className="w-full max-w-4xl flex flex-col landscape:flex-row gap-6">
           <div className="flex-1 flex flex-col gap-4">
             <div className="flex justify-between items-center bg-black/20 p-6 rounded-3xl backdrop-blur-sm shadow-inner">
-               <h2 className="text-5xl font-black drop-shadow-md">{gameState.code}</h2>
-               {isHost && <button onClick={startRound} className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all uppercase tracking-tighter">Start Round</button>}
+               <h2 className="text-4xl sm:text-5xl font-black drop-shadow-md">{gameState.code}</h2>
+               {isHost && <button onClick={startRound} className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all uppercase tracking-tighter text-xs sm:text-base">Start Round</button>}
             </div>
             {isHost ? (
-               <div className="bg-stone-900/60 p-6 rounded-3xl shadow-xl backdrop-blur-md border border-stone-800 flex flex-col gap-4">
-                  <label className="flex items-center justify-between bg-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/20 transition-all border border-white/5">
-                    <span className="font-bold flex items-center gap-2"><Flame size={18} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> include Sus questions</span>
-                    <div className={`w-12 h-6 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-4 h-4 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-6' : 'translate-x-0'}`} /></div>
+               <div className="bg-stone-900/60 p-4 sm:p-6 rounded-3xl shadow-xl backdrop-blur-md border border-stone-800 flex flex-col gap-4">
+                  <label className="flex items-center justify-between bg-white/10 p-3 sm:p-4 rounded-xl cursor-pointer hover:bg-white/20 transition-all border border-white/5">
+                    <span className="font-bold flex items-center gap-2 text-xs sm:text-base"><Flame size={18} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> include Sus questions</span>
+                    <div className={`w-10 h-5 sm:w-12 sm:h-6 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'}`} /></div>
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {Object.keys(THEMES).map(k => (
-                      <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} style={THEMES[k].style} className={`w-10 h-10 rounded-full border-2 transition-all ${gameState.theme === k ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} />
+                      <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} style={THEMES[k].style} className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all ${gameState.theme === k ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} />
                     ))}
                   </div>
                   <div className="flex items-center justify-between px-2 pt-2">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/60">Points to win: {gameState.targetScore || 5}</span>
-                    <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-32 accent-white" />
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white/60">Win at: {gameState.targetScore || 5} pts</span>
+                    <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-24 sm:w-32 accent-white" />
                   </div>
                </div>
             ) : (
                <div className="bg-stone-900/40 p-6 rounded-3xl border border-white/10 backdrop-blur-md flex flex-col gap-4">
                   <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50"><span>Target Score</span><span>{gameState.targetScore || 5}</span></div>
                   {!gameState.susMode ? (
-                    <button onClick={requestSusMode} className="w-full py-4 bg-stone-900/60 hover:bg-stone-900 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"><Flame size={16} /> Request Sus addition</button>
+                    <button onClick={requestSusMode} className="w-full py-3 sm:py-4 bg-stone-900/60 hover:bg-stone-900 border border-white/5 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"><Flame size={16} /> Request Sus addition</button>
                   ) : (
-                    <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2"><Flame size={16} /> Sus addition enabled</div>
+                    <div className="w-full py-3 sm:py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2"><Flame size={16} /> Sus addition enabled</div>
                   )}
                </div>
             )}
           </div>
-          <div className="w-full md:w-80 bg-white rounded-3xl p-6 text-stone-800 shadow-2xl flex flex-col min-h-[300px]">
+          <div className="w-full md:w-80 bg-white rounded-3xl p-6 text-stone-800 shadow-2xl flex flex-col min-h-[250px] sm:min-h-[300px]">
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b pb-4 mb-4 flex justify-between">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100"><div className={`w-6 h-6 rounded-full ${t.bg} text-white flex items-center justify-center text-[10px]`}>{p.name[0]}</div><span className="truncate">{p.name} {p.id === localPlayerId && "(You)"}</span></div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 text-sm sm:text-base"><div className={`w-6 h-6 rounded-full ${t.bg} text-white flex items-center justify-center text-[10px]`}>{p.name[0]}</div><span className="truncate">{p.name} {p.id === localPlayerId && "(You)"}</span></div>
                 ))}
              </div>
           </div>
@@ -582,15 +631,15 @@ export default function App() {
     const isReady = gameState.readyPlayers?.includes(localPlayerId);
     return (
       <div className="fixed inset-0 h-screen w-screen bg-white flex flex-col overflow-hidden">
-        <div className="bg-white px-4 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
-          <div className="flex-1 pr-4 min-w-0"><span className="text-[9px] font-black text-stone-400 block uppercase leading-none mb-0.5">Prompt</span><span className={`text-sm sm:text-lg font-black leading-tight truncate block ${t.text}`}>{prompt}</span></div>
-          <div className="font-mono font-bold bg-stone-100 px-3 py-1 rounded-full text-xs flex-shrink-0">{gameState.timer}s</div>
+        <div className="bg-white px-4 py-1 sm:py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
+          <div className="flex-1 pr-4 min-w-0"><span className="text-[7px] sm:text-[9px] font-black text-stone-400 block uppercase leading-none mb-0.5">Prompt</span><span className={`text-xs sm:text-lg font-black leading-tight truncate block ${t.text}`}>{prompt}</span></div>
+          <div className="font-mono font-bold bg-stone-100 px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs flex-shrink-0">{gameState.timer}s</div>
         </div>
         <div className="flex-1 p-1 overflow-hidden"><DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} /></div>
-        <div className="px-3 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
-          <span className="text-[10px] font-bold text-stone-400 uppercase">{gameState.readyPlayers?.length || 0}/{gameState.players.length} Ready</span>
-          {!isFrozen ? <button onClick={toggleReady} className={`px-8 py-2 rounded-xl font-black text-sm transition-all ${isReady ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-stone-200 text-stone-600'}`}>{isReady ? "LOCKED IN" : "SUBMIT"}</button>
-          : isHost && <button onClick={goToVoting} className={`px-10 py-2 ${t.bg} text-white rounded-xl font-black text-sm shadow-xl uppercase tracking-tighter`}>Reveal & Vote</button>}
+        <div className="px-3 py-1 sm:py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
+          <span className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase">{gameState.readyPlayers?.length || 0}/{gameState.players.length} Ready</span>
+          {!isFrozen ? <button onClick={toggleReady} className={`px-6 sm:px-8 py-1 sm:py-2 rounded-xl font-black text-xs sm:text-sm transition-all ${isReady ? 'bg-green-500 text-white shadow-lg' : 'bg-stone-200 text-stone-600'}`}>{isReady ? "LOCKED IN" : "SUBMIT"}</button>
+          : isHost && <button onClick={goToVoting} className={`px-8 sm:px-10 py-1 sm:py-2 ${t.bg} text-white rounded-xl font-black text-xs sm:text-sm shadow-xl uppercase tracking-tighter`}>Reveal & Vote</button>}
         </div>
       </div>
     );
@@ -598,18 +647,18 @@ export default function App() {
 
   if (gameState.status === 'VOTING') {
     return (
-      <div className="min-h-screen bg-stone-50 p-6 overflow-y-auto flex flex-col items-center">
+      <div className="min-h-screen bg-stone-50 p-4 sm:p-6 overflow-y-auto flex flex-col items-center">
         <div className="w-full max-w-5xl">
-           <h2 className="text-3xl font-black text-stone-800 mb-2">Vote for the Impostor!</h2>
-           <p className="text-stone-500 mb-8 font-medium italic">Target: <span className={`font-bold not-italic ${t.text}`}>{gameState.currentPrompt.normal}</span></p>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+           <h2 className="text-2xl sm:text-3xl font-black text-stone-800 mb-2">Vote for the Impostor!</h2>
+           <p className="text-stone-500 mb-6 sm:mb-8 font-medium italic text-xs sm:text-base">Target: <span className={`font-bold not-italic ${t.text}`}>{gameState.currentPrompt.normal}</span></p>
+           <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
              {gameState.players.map(p => (
                <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                  className={`bg-white p-3 rounded-3xl border-4 shadow-sm transition-all text-left ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                  <div className="aspect-video bg-stone-50 rounded-2xl mb-3 overflow-hidden border border-stone-100 relative">
-                   {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-xs uppercase text-center p-4">Blank</div>}
+                   {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[10px] sm:text-xs uppercase text-center p-4">Blank</div>}
                  </div>
-                 <div className="flex items-center gap-2"><div className={`w-4 h-4 rounded-full ${t.bg}`} /><span className="font-black text-sm text-stone-800 truncate">{p.name} {p.id === localPlayerId && "(You)"}</span></div>
+                 <div className="flex items-center gap-2"><div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${t.bg}`} /><span className="font-black text-xs sm:text-sm text-stone-800 truncate">{p.name} {p.id === localPlayerId && "(You)"}</span></div>
                </button>
              ))}
            </div>
@@ -620,8 +669,9 @@ export default function App() {
 
   if (gameState.status === 'COUNTDOWN') {
     return (
-      <div className={`h-screen ${t.bg} flex flex-col items-center justify-center text-white`} style={t.style}>
-        <div className="text-[12rem] sm:text-[20rem] font-black drop-shadow-2xl animate-pulse">{gameState.timer}</div>
+      <div className={`h-screen ${t.bg} flex flex-col items-center justify-center text-white p-4`} style={t.style}>
+         <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 drop-shadow-md bg-black/20 px-6 py-2 rounded-full">Tallying...</h2>
+        <div className="text-[10rem] sm:text-[18rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
       </div>
     );
   }
@@ -629,21 +679,22 @@ export default function App() {
   if (gameState.status === 'RESULTS') {
     const imp = gameState.players.find(p => p.id === gameState.impostorId);
     const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
-    const winners = gameState.players.filter(p => p.score === Math.max(...gameState.players.map(p => p.score)) && p.score >= (gameState.targetScore || 5));
+    const maxScore = Math.max(...gameState.players.map(p => p.score));
+    const winners = gameState.players.filter(p => p.score === maxScore && p.score >= (gameState.targetScore || 5));
     return (
-      <div className="min-h-screen bg-stone-50 p-6 flex items-center justify-center overflow-y-auto">
-        <div className="w-full max-w-5xl flex flex-col md:flex-row gap-8 items-center md:items-stretch">
+      <div className="min-h-screen bg-stone-50 p-4 sm:p-6 flex items-center justify-center overflow-y-auto">
+        <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 sm:gap-8 items-center landscape:items-stretch">
           <div className="flex-1 flex flex-col justify-center text-center">
-            {isGameOver && <div className="bg-amber-400 text-amber-900 p-6 rounded-3xl mb-6 shadow-2xl border-4 border-amber-200 animate-bounce"><h2 className="text-2xl font-black uppercase tracking-widest mb-2">🏆 GAME WON!</h2><p className="font-black text-xl">{winners.map(w => w.name).join(' & ')}</p></div>}
-            <div className={`${t.text} font-black uppercase tracking-widest text-xs mb-2 opacity-60`}>The Impostor Was</div>
-            <h2 className="text-6xl font-black text-stone-800 mb-8 drop-shadow-md">{imp?.name}</h2>
-            {isHost && <button onClick={startRound} className={`py-5 ${t.bg} text-white rounded-3xl font-black text-xl shadow-xl active:scale-95 transition-all w-full`} style={t.style}>{isGameOver ? 'NEW GAME' : 'NEXT ROUND'}</button>}
+            {isGameOver && <div className="bg-amber-400 text-amber-900 p-4 sm:p-6 rounded-3xl mb-6 shadow-2xl border-4 border-amber-200 animate-bounce"><h2 className="text-xl sm:text-2xl font-black uppercase tracking-widest mb-1 sm:mb-2">🏆 GAME WON!</h2><p className="font-black text-base sm:text-xl">{winners.map(w => w.name).join(' & ')}</p></div>}
+            <div className={`${t.text} font-black uppercase tracking-widest text-[10px] sm:text-xs mb-1 sm:mb-2 opacity-60`}>The Impostor Was</div>
+            <h2 className="text-4xl sm:text-6xl font-black text-stone-800 mb-6 sm:mb-8 drop-shadow-md">{imp?.name}</h2>
+            {isHost && <button onClick={startRound} className={`py-3 sm:py-5 ${t.bg} text-white rounded-3xl font-black text-base sm:text-xl shadow-xl active:scale-95 transition-all w-full`} style={t.style}>{isGameOver ? 'NEW GAME' : 'NEXT ROUND'}</button>}
           </div>
-          <div className="w-full md:w-96 bg-white rounded-[40px] p-8 shadow-2xl border border-stone-100 flex flex-col">
-            <div className="border-b border-stone-100 pb-4 mb-4 text-left"><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Normal Prompt</span><span className="text-stone-800 font-bold block mb-3 text-sm">{gameState.currentPrompt.normal}</span><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Bluff Prompt</span><span className={`${t.text} font-bold block text-sm`}>{gameState.currentPrompt.bluff}</span></div>
+          <div className="w-full md:w-96 bg-white rounded-[30px] sm:rounded-[40px] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col">
+            <div className="border-b border-stone-100 pb-4 mb-4 text-left"><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Normal Prompt</span><span className="text-stone-800 font-bold block mb-3 text-xs sm:text-sm">{gameState.currentPrompt.normal}</span><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Bluff Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm`}>{gameState.currentPrompt.bluff}</span></div>
             <div className="space-y-2 flex-1">
               {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
-                <div key={p.id} className={`flex justify-between items-center p-4 rounded-2xl ${p.id === gameState.impostorId ? `${t.lightBg} border border-dashed ${t.border}` : 'bg-stone-50 border border-stone-100'}`}><div className="flex items-center gap-3 overflow-hidden"><span className="font-black text-stone-300 text-sm w-4">{i+1}</span><span className={`font-black truncate text-sm ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span></div><div className="flex items-center gap-2"><Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500" : "text-stone-200"} /><span className="font-black text-stone-800 text-lg">{p.score}</span></div></div>
+                <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-2xl ${p.id === gameState.impostorId ? `${t.lightBg} border border-dashed ${t.border}` : 'bg-stone-50 border border-stone-100'}`}><div className="flex items-center gap-3 overflow-hidden"><span className="font-black text-stone-300 text-xs sm:text-sm w-4">{i+1}</span><span className={`font-black truncate text-xs sm:text-sm ${p.id === gameState.impostorId ? t.text : 'text-stone-700'}`}>{p.name}</span></div><div className="flex items-center gap-2"><Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500" : "text-stone-200"} /><span className="font-black text-stone-800 text-base sm:text-lg">{p.score}</span></div></div>
               ))}
             </div>
           </div>
