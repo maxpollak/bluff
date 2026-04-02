@@ -268,7 +268,6 @@ export default function App() {
   const [isHost, setIsHost] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [hasVoted, setHasVoted] = useState(false);
   const [myDrawing, setMyDrawing] = useState('');
   const [joinedRoomCode, setJoinedRoomCode] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -340,7 +339,6 @@ export default function App() {
 
   useEffect(() => {
     if (gameState?.status === 'DRAWING' || gameState?.status === 'LOBBY') {
-      setHasVoted(false);
       setMyDrawing('');
     }
   }, [gameState?.status, gameState?.round]);
@@ -356,13 +354,13 @@ export default function App() {
     }
   }, [gameState?.votes, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
 
-  // FIX: Host started reveal timer actually counts down now
+  // FIX: Reveal logic handles 10 second discussion countdown for the host
   useEffect(() => {
     if (isHost && gameState?.status === 'DRAWING') {
       if (gameState.readyPlayers?.length === gameState.players.length && gameState.players.length > 0) {
         if (timerRef.current) clearInterval(timerRef.current);
         updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 10 }); 
-        runTimer(10, 'REVEAL'); // Local host timer logic
+        runTimer(10, 'REVEAL'); 
       }
     }
   }, [gameState?.readyPlayers, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
@@ -383,7 +381,7 @@ export default function App() {
       if (timeLeft <= 0) {
         clearInterval(timerRef.current);
         if (context === 'RESULTS_CALC') calculateResults();
-        else updateDoc(getRoomRef(joinedRoomCode), { timer: 0 }); // Just end it
+        else updateDoc(getRoomRef(joinedRoomCode), { timer: 0 }); 
       } else {
         updateDoc(getRoomRef(joinedRoomCode), { timer: timeLeft });
       }
@@ -494,8 +492,9 @@ export default function App() {
   };
 
   const submitVote = async (targetUid) => {
-    if (hasVoted || gameState?.status !== 'VOTING' || !user) return;
-    setHasVoted(true);
+    if (gameState?.status !== 'VOTING' || !user) return;
+    // Switching votes: Just update with the new target. 
+    // Host logic handles the lock when everyone has voted.
     await updateDoc(getRoomRef(joinedRoomCode), { [`votes.${localPlayerId}`]: targetUid });
   };
 
@@ -510,11 +509,15 @@ export default function App() {
   };
 
   const leaveGame = async () => {
-    // FORCE FULL RESET: Clear code first to stop listener, then local states
+    // 1. Snapshot the code
     const codeToClear = joinedRoomCode;
+    // 2. Clear local states immediately to break the render loop
     setJoinedRoomCode('');
     setGameState(null);
-
+    setRoomCode('');
+    setShowLeaveConfirm(false);
+    
+    // 3. Update DB asynchronously
     if (codeToClear && user) {
         try {
             const roomRef = getRoomRef(codeToClear);
@@ -526,12 +529,8 @@ export default function App() {
             }
         } catch (e) { console.error("Exit err:", e); }
     }
-    
-    window.history.replaceState(null, '', window.location.pathname);
-    setRoomCode('');
-    setHasVoted(false);
-    setMyDrawing('');
-    setShowLeaveConfirm(false);
+    // 4. Clean URL
+    window.history.replaceState(null, '', window.location.origin + window.location.pathname);
   };
 
   const t = THEMES[gameState?.theme] || THEMES.rose;
@@ -582,13 +581,13 @@ export default function App() {
     );
   }
 
-  // --- LOBBY SCREEN ---
+  // --- LOBBY SCREEN (One-Page Layout) ---
   if (gameState.status === 'LOBBY') {
     return (
       <div className={`fixed inset-0 ${t.bg} p-4 sm:p-8 text-white flex flex-col items-center justify-center overflow-hidden`} style={t.style}>
         {isHost && gameState.susRequest && (
-          <div className="fixed inset-0 z-[2050] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 text-stone-800">
-             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+          <div className="fixed inset-0 z-[2050] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 text-stone-800 text-center">
+             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full">
                  <Flame size={64} className="text-rose-500 mx-auto mb-4 animate-bounce" />
                  <h3 className="text-xl font-black mb-6 tracking-tight leading-tight font-black">{gameState.susRequest.requesterName} wants Sus addition!</h3>
                  <div className="flex gap-3">
@@ -687,7 +686,7 @@ export default function App() {
       
       return (
         <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden text-stone-800">
-          {/* Header (No Cutoff) */}
+          {/* Header */}
           <div className={`bg-white px-5 py-3 border-b border-stone-100 flex justify-between items-center z-10 shrink-0 transition-all duration-700 ${isRevealing ? 'bg-stone-50 border-none' : ''}`}>
              <div className="flex-1 pr-6 min-w-0">
                <span className={`text-[9px] font-black text-stone-400 block uppercase mb-1 tracking-widest font-black transition-opacity ${isRevealing && revealStep === 0 ? 'opacity-0' : 'opacity-100'}`}>
@@ -728,7 +727,7 @@ export default function App() {
           {isRevealing && isHost && revealStep === 1 && (
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full px-6 flex justify-center z-[110]">
               {gameState.timer > 0 ? (
-                <div className="px-10 py-4 bg-stone-200 text-stone-400 rounded-2xl font-black uppercase text-xs tracking-widest shadow-inner border border-stone-100 font-black">
+                <div className="px-10 py-4 bg-stone-200 text-stone-400 rounded-2xl font-black uppercase text-xs tracking-widest font-black">
                    Wait to Vote ({gameState.timer}s)
                 </div>
               ) : (
@@ -745,19 +744,24 @@ export default function App() {
     }
 
     if (gameState.status === 'VOTING') {
+      const currentSelection = gameState.votes?.[localPlayerId];
       return (
         <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center text-stone-800">
           <div className="w-full max-w-6xl h-full flex flex-col">
              <div className="mb-6 shrink-0 text-center sm:text-left">
                   <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase font-black">Who's Lying?</h2>
                   <p className="text-stone-400 font-bold text-xs sm:text-sm leading-tight font-bold">Target Question: <span className={`font-black not-italic break-words ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
+                  <p className="text-stone-500 text-[10px] uppercase font-black mt-2">Tap any player to switch your vote.</p>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 flex-1">
                {gameState.players.map(p => (
-                 <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
-                   className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
+                 <button key={p.id} disabled={p.id === localPlayerId} onClick={() => submitVote(p.id)}
+                   className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${currentSelection === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                    <div className="aspect-video bg-stone-50 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black font-black font-black">BLANK</div>}
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">BLANK</div>}
+                     {currentSelection === p.id && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full shadow-lg"><Check size={12} strokeWidth={4} /></div>
+                     )}
                    </div>
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} transition-transform group-hover:scale-110`} />
@@ -777,8 +781,8 @@ export default function App() {
     if (gameState.status === 'COUNTDOWN') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000] p-6`} style={t.style}>
-          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center font-black">Calculating Results...</h2>
-          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none font-black font-black">{gameState.timer}</div>
+          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center font-black">Final Tally...</h2>
+          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none font-black">{gameState.timer}</div>
           <LeaveButton />
           <LeaveModal />
         </div>
@@ -795,38 +799,38 @@ export default function App() {
           <div className="w-full max-w-md flex flex-col gap-6">
             {isGameOver && (
                <div className="bg-amber-400 text-amber-900 p-6 rounded-[2.5rem] shadow-2xl border-4 border-amber-200 animate-bounce text-center">
-                  <h2 className="text-2xl font-black uppercase mb-1 font-black leading-none font-black font-black font-black">🏆 WE HAVE A WINNER!</h2>
-                  <p className="font-black text-xl font-black font-black">{winners.map(w => w.name).join(' & ')}</p>
+                  <h2 className="text-2xl font-black uppercase mb-1 font-black leading-none font-black">🏆 WINNER!</h2>
+                  <p className="font-black text-xl font-black">{winners.map(w => w.name).join(' & ')}</p>
                </div>
             )}
 
             <div className="text-center py-4">
-              <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60 font-black font-black font-black`}>The Impostor Was</div>
-              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black font-black font-black">{imp?.name}</h2>
+              <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60 font-black`}>The Impostor Was</div>
+              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black">{imp?.name}</h2>
             </div>
 
             <div className="bg-white rounded-[2rem] p-6 shadow-2xl border border-stone-100 flex flex-col">
-              <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black font-black">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words font-black font-black">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words font-black font-black`}>{gameState.currentPrompt?.bluff}</span></div>
+              <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black">
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words font-black">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words font-black`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                   <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border}` : 'bg-stone-50'}`}>
-                      <div className="flex items-center gap-3 overflow-hidden font-black font-black">
-                          <span className="font-black text-stone-300 text-xs w-4 shrink-0 font-black font-black">{i+1}</span>
-                          <span className={`font-black truncate text-sm font-black font-black`}>{p.name}</span>
+                      <div className="flex items-center gap-3 overflow-hidden font-black">
+                          <span className="font-black text-stone-300 text-xs w-4 shrink-0">{i+1}</span>
+                          <span className={`font-black truncate text-sm`}>{p.name}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 font-black font-black font-black">
+                      <div className="flex items-center gap-1 shrink-0 font-black">
                           <Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
-                          <span className="font-black text-stone-800 text-lg leading-none font-black font-black">{p.score}</span>
+                          <span className="font-black text-stone-800 text-lg leading-none font-black">{p.score}</span>
                       </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all w-full tracking-tighter uppercase font-black font-black font-black`}>{isGameOver ? 'START NEW GAME' : 'CONTINUE'}</button>}
+            {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all w-full tracking-tighter uppercase font-black`}>{isGameOver ? 'START NEW GAME' : 'CONTINUE'}</button>}
           </div>
           <LeaveButton />
           <LeaveModal />
