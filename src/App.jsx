@@ -356,12 +356,13 @@ export default function App() {
     }
   }, [gameState?.votes, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
 
+  // FIX: Host started reveal timer actually counts down now
   useEffect(() => {
     if (isHost && gameState?.status === 'DRAWING') {
       if (gameState.readyPlayers?.length === gameState.players.length && gameState.players.length > 0) {
         if (timerRef.current) clearInterval(timerRef.current);
-        // User requested 10 second countdown during reveal for discussion
         updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 10 }); 
+        runTimer(10, 'REVEAL'); // Local host timer logic
       }
     }
   }, [gameState?.readyPlayers, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
@@ -374,15 +375,15 @@ export default function App() {
     }
   }, [gameState?.status, gameState?.readyPlayers, joinedRoomCode, localPlayerId, myDrawing]);
 
-  const runTimer = (seconds, nextStatus) => {
+  const runTimer = (seconds, context) => {
     if (timerRef.current) clearInterval(timerRef.current);
     let timeLeft = seconds;
     timerRef.current = setInterval(async () => {
       timeLeft -= 1;
       if (timeLeft <= 0) {
         clearInterval(timerRef.current);
-        if (nextStatus === 'RESULTS_CALC') calculateResults();
-        else updateDoc(getRoomRef(joinedRoomCode), { status: nextStatus, timer: 0 });
+        if (context === 'RESULTS_CALC') calculateResults();
+        else updateDoc(getRoomRef(joinedRoomCode), { timer: 0 }); // Just end it
       } else {
         updateDoc(getRoomRef(joinedRoomCode), { timer: timeLeft });
       }
@@ -454,7 +455,7 @@ export default function App() {
       round: isGameOver ? 1 : (gameState.round || 1) + 1,
       players: isGameOver ? gameState.players.map(p => ({...p, score: 0})) : gameState.players
     });
-    runTimer(90, 'REVEAL');
+    runTimer(90, 'DRAWING');
   };
 
   const calculateResults = async () => {
@@ -509,18 +510,27 @@ export default function App() {
   };
 
   const leaveGame = async () => {
-    // 1. If joined, remove self from the list
-    if (joinedRoomCode && user && gameState) {
-        const playerToRemove = gameState.players.find(p => p.id === localPlayerId);
-        if (playerToRemove) {
-            await updateDoc(getRoomRef(joinedRoomCode), { players: arrayRemove(playerToRemove) });
-        }
-    }
-    // 2. Clear state and URL
-    window.history.replaceState(null, '', window.location.pathname);
+    // FORCE FULL RESET: Clear code first to stop listener, then local states
+    const codeToClear = joinedRoomCode;
     setJoinedRoomCode('');
     setGameState(null);
+
+    if (codeToClear && user) {
+        try {
+            const roomRef = getRoomRef(codeToClear);
+            const snap = await getDoc(roomRef);
+            if (snap.exists()) {
+                const players = snap.data().players || [];
+                const updated = players.filter(p => p.id !== localPlayerId);
+                await updateDoc(roomRef, { players: updated });
+            }
+        } catch (e) { console.error("Exit err:", e); }
+    }
+    
+    window.history.replaceState(null, '', window.location.pathname);
     setRoomCode('');
+    setHasVoted(false);
+    setMyDrawing('');
     setShowLeaveConfirm(false);
   };
 
@@ -582,8 +592,8 @@ export default function App() {
                  <Flame size={64} className="text-rose-500 mx-auto mb-4 animate-bounce" />
                  <h3 className="text-xl font-black mb-6 tracking-tight leading-tight font-black">{gameState.susRequest.requesterName} wants Sus addition!</h3>
                  <div className="flex gap-3">
-                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95 transition-all uppercase font-black">Skip</button>
-                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all uppercase font-black">Enable</button>
+                    <button onClick={() => handleSusRequest(false)} className="flex-1 py-4 bg-stone-100 text-stone-600 font-bold rounded-2xl active:scale-95 transition-all uppercase font-black text-sm">Skip</button>
+                    <button onClick={() => handleSusRequest(true)} className="flex-1 py-4 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all uppercase font-black text-sm">Enable</button>
                  </div>
              </div>
           </div>
@@ -643,7 +653,7 @@ export default function App() {
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-3 mb-3 flex justify-between shrink-0 font-black">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0 leading-none font-black"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-1 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0 leading-none font-black font-bold"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-1 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
                 ))}
              </div>
              <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0 font-black uppercase`}>
@@ -677,7 +687,7 @@ export default function App() {
       
       return (
         <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden text-stone-800">
-          {/* Header */}
+          {/* Header (No Cutoff) */}
           <div className={`bg-white px-5 py-3 border-b border-stone-100 flex justify-between items-center z-10 shrink-0 transition-all duration-700 ${isRevealing ? 'bg-stone-50 border-none' : ''}`}>
              <div className="flex-1 pr-6 min-w-0">
                <span className={`text-[9px] font-black text-stone-400 block uppercase mb-1 tracking-widest font-black transition-opacity ${isRevealing && revealStep === 0 ? 'opacity-0' : 'opacity-100'}`}>
@@ -718,7 +728,7 @@ export default function App() {
           {isRevealing && isHost && revealStep === 1 && (
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full px-6 flex justify-center z-[110]">
               {gameState.timer > 0 ? (
-                <div className="px-10 py-4 bg-stone-200 text-stone-400 rounded-2xl font-black uppercase text-xs tracking-widest shadow-inner border border-stone-100">
+                <div className="px-10 py-4 bg-stone-200 text-stone-400 rounded-2xl font-black uppercase text-xs tracking-widest shadow-inner border border-stone-100 font-black">
                    Wait to Vote ({gameState.timer}s)
                 </div>
               ) : (
@@ -747,7 +757,7 @@ export default function App() {
                  <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                    className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                    <div className="aspect-video bg-stone-50 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black font-black">BLANK</div>}
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black font-black font-black">BLANK</div>}
                    </div>
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} transition-transform group-hover:scale-110`} />
@@ -768,7 +778,7 @@ export default function App() {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000] p-6`} style={t.style}>
           <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center font-black">Calculating Results...</h2>
-          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none font-black">{gameState.timer}</div>
+          <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none font-black font-black">{gameState.timer}</div>
           <LeaveButton />
           <LeaveModal />
         </div>
@@ -785,38 +795,38 @@ export default function App() {
           <div className="w-full max-w-md flex flex-col gap-6">
             {isGameOver && (
                <div className="bg-amber-400 text-amber-900 p-6 rounded-[2.5rem] shadow-2xl border-4 border-amber-200 animate-bounce text-center">
-                  <h2 className="text-2xl font-black uppercase mb-1 font-black leading-none">🏆 WE HAVE A WINNER!</h2>
-                  <p className="font-black text-xl font-black">{winners.map(w => w.name).join(' & ')}</p>
+                  <h2 className="text-2xl font-black uppercase mb-1 font-black leading-none font-black font-black font-black">🏆 WE HAVE A WINNER!</h2>
+                  <p className="font-black text-xl font-black font-black">{winners.map(w => w.name).join(' & ')}</p>
                </div>
             )}
 
             <div className="text-center py-4">
-              <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60 font-black`}>The Impostor Was</div>
-              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black">{imp?.name}</h2>
+              <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60 font-black font-black font-black`}>The Impostor Was</div>
+              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black font-black font-black">{imp?.name}</h2>
             </div>
 
             <div className="bg-white rounded-[2rem] p-6 shadow-2xl border border-stone-100 flex flex-col">
-              <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words font-black">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words font-black`}>{gameState.currentPrompt?.bluff}</span></div>
+              <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black font-black">
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black font-black">Group Question</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words font-black font-black">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1 font-black font-black">Impostor Question</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words font-black font-black`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                   <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border}` : 'bg-stone-50'}`}>
                       <div className="flex items-center gap-3 overflow-hidden font-black font-black">
-                          <span className="font-black text-stone-300 text-xs w-4 shrink-0 font-black">{i+1}</span>
-                          <span className={`font-black truncate text-sm font-black`}>{p.name}</span>
+                          <span className="font-black text-stone-300 text-xs w-4 shrink-0 font-black font-black">{i+1}</span>
+                          <span className={`font-black truncate text-sm font-black font-black`}>{p.name}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 font-black">
+                      <div className="flex items-center gap-1 shrink-0 font-black font-black font-black">
                           <Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
-                          <span className="font-black text-stone-800 text-lg leading-none font-black">{p.score}</span>
+                          <span className="font-black text-stone-800 text-lg leading-none font-black font-black">{p.score}</span>
                       </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all w-full tracking-tighter uppercase font-black`}>{isGameOver ? 'START NEW GAME' : 'CONTINUE'}</button>}
+            {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all w-full tracking-tighter uppercase font-black font-black font-black`}>{isGameOver ? 'START NEW GAME' : 'CONTINUE'}</button>}
           </div>
           <LeaveButton />
           <LeaveModal />
