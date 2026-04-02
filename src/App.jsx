@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2, Share
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2, LogOut, X
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -28,72 +28,72 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const PROMPT_PAIRS = [
-  { normal: "What video game requires the most skill?", bluff: "What is a game you would play with your kids?" },
-  { normal: "How many days can you survive in prison?", bluff: "Name an amount of days/months/ years between 0 and 2 years" },
-  { normal: "What age should you stop going to the club?", bluff: "Pick a number between 21 and 90" },
-  { normal: "What is your pump-up song?", bluff: "What's a song you wouldn't skip if it came on?" },
-  { normal: "How much money would it take you to run through the street naked right now?", bluff: "Choose an amount of money between $1 and $100,000" },
-  { normal: "What show or movie is really uncomfortable to watch with parents?", bluff: "What's a TV show you watch that you would not recommend to a friend?" },
-  { normal: "What influencer do you think you could beat in a fight?", bluff: "Who was the first Youtuber you remember watching" },
-  { normal: "What age did you get your first allowance?", bluff: "What age did your parents buy your first video game?" },
-  { normal: "How many people would show up to your birthday party?", bluff: "Pick a number between 5 and 300" },
-  { normal: "What two artists should collaborate on a song?", bluff: "Name two music artists that have dated" },
-  { normal: "How long can you go without showering?", bluff: "Write a number of days between 0 and 31" },
-  { normal: "What actor do you think you can beat in a fight?", bluff: "Who is your favorite actor?" },
-  { normal: "What is the worst food to order on a date?", bluff: "What is your favorite food to order at a restaurant?" },
-  { normal: "What color would you say your mood is right now?", bluff: "What's your least favorite color?" },
-  { normal: "Name someone here who you think would be a secret serial killer", bluff: "Who do you think is the most forgetful person here?" },
-  { normal: "If you started training right now, how long would it take you to dunk a basketball?", bluff: "Pick a time frame between 2 weeks and 1 year" },
-  { normal: "What is the largest animal you think you could beat in a fight?", bluff: "What's an animal you've seen up close before?" },
-  { normal: "How fast do you think you can throw a baseball?", bluff: "Pick a miles-per-hour number between 10 and 100" },
-  { normal: "How many times do you pee a day?", bluff: "Put a number between 0 and 8" },
-  { normal: "Who is the worst actor?", bluff: "Name an actor you recognize immediately by their voice" },
-  { normal: "How many times a week do you wash your feet in the shower?", bluff: "On average, how many cups of water do you drink a day?" },
-  { normal: "If someone is showing you a video on their phone, what is the longest it should be?", bluff: "Put a time between 0 seconds and 10 minutes" },
-  { normal: "Worst emoji to reply to the FBI?", bluff: "What emoji do you use the most when texting?" },
-  { normal: "Which celeb should be president?", bluff: "Who is the most overrated celebrity?" },
-  { normal: "How many days can you go without eating?", bluff: "Pick a number between 1 and 40 (Answer in \"days\")" },
-  { normal: "Best age to retire?", bluff: "What age would you want to stay forever?" },
-  { normal: "Age you want to have kids?", bluff: "Pick a number between 24 and 75" },
-  { normal: "Athlete you can beat at their own sport?", bluff: "Who is the worst pro athlete?" },
-  { normal: "How many days can you go without pooping?", bluff: "Pick a number between 1 and 20" },
-  { normal: "How many hotdogs could you eat in one sitting?", bluff: "Amount of coins you could stack before the pile falls" },
-  { normal: "What's the top speed of a human?", bluff: "What speed do you think you personally can run?" },
-  { normal: "How many kids could you take in a fight?", bluff: "Number between 8 and 30" },
-  { normal: "How much money would it take to reveal your internet search history?", bluff: "Pick a number between 1 million and 10 million" },
-  { normal: "How many hours of sleep do you get per night?", bluff: "How many hours could you watch TV or doom scroll for without getting up?" },
-  { normal: "How long can you survive in the woods?", bluff: "Most amount of time you have gone without leaving your house?" },
-  { normal: "Your dream Halloween costume?", bluff: "Ugliest actor" },
-  { normal: "Who would make the best lawyer?", bluff: "Who argues the most?" },
-  { normal: "What's your go-to drink?", bluff: "What drink did you last have" },
-  { normal: "What age should you first get your phone?", bluff: "What age did you hit puberty" }
+  { id: "n1", normal: "What video game requires the most skill?", bluff: "What is a video game you would play with your kids?" },
+  { id: "n2", normal: "How many days can you survive in prison?", bluff: "Name an amount of days/months/ years between 0 and 2 years" },
+  { id: "n3", normal: "What age should you stop going to the club?", bluff: "Pick a number between 21 and 90" },
+  { id: "n4", normal: "What is your pump-up song?", bluff: "What's a song you wouldn't skip if it came on?" },
+  { id: "n5", normal: "How much money would it take you to run through the street naked right now?", bluff: "Choose an amount of money between $1 and $100,000" },
+  { id: "n6", normal: "What show or movie is really uncomfortable to watch with parents?", bluff: "What's a TV show you watch that you would not recommend to a friend?" },
+  { id: "n7", normal: "What influencer do you think you could beat in a fight?", bluff: "Who was the first Youtuber you remember watching" },
+  { id: "n8", normal: "What age did you get your first allowance?", bluff: "What age did your parents buy your first video game?" },
+  { id: "n9", normal: "How many people would show up to your birthday party?", bluff: "Pick a number between 5 and 300" },
+  { id: "n10", normal: "What two artists should collaborate on a song?", bluff: "Name two music artists that have dated" },
+  { id: "n11", normal: "How long can you go without showering?", bluff: "Write a number of days between 0 and 31" },
+  { id: "n12", normal: "What actor do you think you can beat in a fight?", bluff: "Who is your favorite actor?" },
+  { id: "n13", normal: "What is the worst food to order on a date?", bluff: "What is your favorite food to order at a restaurant?" },
+  { id: "n14", normal: "What color would you say your mood is right now?", bluff: "What's your least favorite color?" },
+  { id: "n15", normal: "Name someone here who you think would be a secret serial killer", bluff: "Who do you think is the most forgetful person here?" },
+  { id: "n16", normal: "If you started training right now, how long would it take you to dunk a basketball?", bluff: "Pick a time frame between 2 weeks and 1 year" },
+  { id: "n17", normal: "What is the largest animal you think you could beat in a fight?", bluff: "What's an animal you've seen up close before?" },
+  { id: "n18", normal: "How fast do you think you can throw a baseball?", bluff: "Pick a miles-per-hour number between 10 and 100" },
+  { id: "n19", normal: "How many times do you pee a day?", bluff: "Put a number between 0 and 8" },
+  { id: "n20", normal: "Who is the worst actor?", bluff: "Name an actor you recognize immediately by their voice" },
+  { id: "n21", normal: "How many times a week do you wash your feet in the shower?", bluff: "On average, how many cups of water do you drink a day?" },
+  { id: "n22", normal: "If someone is showing you a video on their phone, what is the longest it should be?", bluff: "Put a time between 0 seconds and 10 minutes" },
+  { id: "n23", normal: "Worst emoji to reply to the FBI?", bluff: "What emoji do you use the most when texting?" },
+  { id: "n24", normal: "Which celeb should be president?", bluff: "Who is the most overrated celebrity?" },
+  { id: "n25", normal: "How many days can you go without eating?", bluff: "Pick a number between 1 and 40 (Answer in \"days\")" },
+  { id: "n26", normal: "Best age to retire?", bluff: "What age would you want to stay forever?" },
+  { id: "n27", normal: "Age you want to have kids?", bluff: "Pick a number between 24 and 75" },
+  { id: "n28", normal: "Athlete you can beat at their own sport?", bluff: "Who is the worst pro athlete?" },
+  { id: "n29", normal: "How many days can you go without pooping?", bluff: "Pick a number between 1 and 20" },
+  { id: "n30", normal: "How many hotdogs could you eat in one sitting?", bluff: "Amount of coins you could stack before the pile falls" },
+  { id: "n31", normal: "What's the top speed of a human?", bluff: "What speed do you think you personally can run?" },
+  { id: "n32", normal: "How many kids could you take in a fight?", bluff: "Number between 8 and 30" },
+  { id: "n33", normal: "How much money would it take to reveal your internet search history?", bluff: "Pick a number between 1 million and 10 million" },
+  { id: "n34", normal: "How many hours of sleep do you get per night?", bluff: "How many hours could you watch TV or doom scroll for without getting up?" },
+  { id: "n35", normal: "How long can you survive in the woods?", bluff: "Most amount of time you have gone without leaving your house?" },
+  { id: "n36", normal: "Your dream Halloween costume?", bluff: "Ugliest actor" },
+  { id: "n37", normal: "Who would make the best lawyer?", bluff: "Who argues the most?" },
+  { id: "n38", normal: "What's your go-to drink?", bluff: "What drink did you last have" },
+  { id: "n39", normal: "What age should you first get your phone?", bluff: "What age did you hit puberty" }
 ];
 
 const SUS_PROMPTS = [
-  { normal: "What’s the longest you think you’d last during sex?", bluff: "How many minutes can you stay focused on one thing without getting distracted?" },
-  { normal: "What’s a food that would be a terrible lube during sex?", bluff: "What’s a food that would be really messy to handle?" },
-  { normal: "What’s a name that sounds like it belongs to someone with a huge penis?", bluff: "What’s a name that sounds very unconfident?" },
-  { normal: "What’s a place you should absolutely NOT have sex?", bluff: "What’s a place you should hide while playing hide and seek?" },
-  { normal: "What’s something that would immediately ruin the mood during sex?", bluff: "What’s something that would ruin a serious moment?" },
-  { normal: "What’s something that would be weird to say right before sex?", bluff: "What’s something that would be good to say to your teacher" },
-  { normal: "What’s an object that looks like a penis?", bluff: "What’s the tallest object you can think of" },
-  { normal: "What’s something that would be awkward to moan during sex?", bluff: "What’s the name of your first pet" },
-  { normal: "What’s a song that would make sex extremely uncomfortable?", bluff: "What's the last song you listened to?" },
-  { normal: "What’s a word that sounds dirty even though it’s not?", bluff: "What’s a word you'd moan while having sex?" },
-  { normal: "What’s something that would be weird to bring into bed during sex?", bluff: "What’s something that would be weird to bring to work?" },
-  { normal: "What’s a profession that probably has the best sex lives?", bluff: "What’s a profession that seems the most exciting?" },
-  { normal: "What’s something that would be suspicious to find in someone’s bedroom?", bluff: "What’s something that you own that you don't want other people to see?" },
-  { normal: "What’s something that would make boobs less attractive?", bluff: "Write \"if they were on ____\" and fill in the blank with anyone" },
-  { normal: "What’s something you’d never want someone to say about your penis?", bluff: "What’s something a snail would love to hear?" },
-  { normal: "What’s something that would be the worst excuse to avoid sex?", bluff: "What’s the best excuse for not doing your homework?" },
-  { normal: "What’s something that would make a hookup immediately awkward?", bluff: "Name a bad person" },
-  { normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you compliment a horse?" },
-  { normal: "What’s something that would be uncomfortable to hear during sex?", bluff: "What’s something weird to hear in a quiet moment?" },
-  { normal: "What’s something that would make a kiss instantly bad?", bluff: "What’s something that would make a first impression bad?" },
-  { normal: "What’s something that would be weird to do after sex?", bluff: "What’s something you would want to do after a sad movie" },
-  { normal: "What’s something that would be the worst thing to say about someone’s vagina?", bluff: "How would you describe old person boobies" },
-  { normal: "Create a name for a vagina", bluff: "Create a nickname for a turtle" },
-  { normal: "Create a name for boobs", bluff: "Create a nickname for balls" }
+  { id: "s1", normal: "What’s the longest you think you’d last during sex?", bluff: "How many minutes can you stay focused on one thing without getting distracted?" },
+  { id: "s2", normal: "What’s a food that would be a terrible lube during sex?", bluff: "What’s a food that would be really messy to handle?" },
+  { id: "s3", normal: "What’s a name that sounds like it belongs to someone with a huge penis?", bluff: "What’s a name that sounds very unconfident?" },
+  { id: "s4", normal: "What’s a place you should absolutely NOT have sex?", bluff: "What’s a place you should hide while playing hide and seek?" },
+  { id: "s5", normal: "What’s something that would immediately ruin the mood during sex?", bluff: "What’s something that would ruin a serious moment?" },
+  { id: "s6", normal: "What’s something that would be weird to say right before sex?", bluff: "What’s something that would be good to say to your teacher" },
+  { id: "s7", normal: "What’s an object that looks like a penis?", bluff: "What’s the tallest object you can think of" },
+  { id: "s8", normal: "What’s something that would be awkward to moan during sex?", bluff: "What’s the name of your first pet" },
+  { id: "s9", normal: "What’s a song that would make sex extremely uncomfortable?", bluff: "What's the last song you listened to?" },
+  { id: "s10", normal: "What’s a word that sounds dirty even though it’s not?", bluff: "What’s a word you'd moan while having sex?" },
+  { id: "s11", normal: "What’s something that would be weird to bring into bed during sex?", bluff: "What’s something that would be weird to bring to work?" },
+  { id: "s12", normal: "What’s a profession that probably has the best sex lives?", bluff: "What’s a profession that seems the most exciting?" },
+  { id: "s13", normal: "What’s something that would be suspicious to find in someone’s bedroom?", bluff: "What’s something that you own that you don't want other people to see?" },
+  { id: "s14", normal: "What’s something that would make boobs less attractive?", bluff: "Write \"if they were on ____\" and fill in the blank with anyone" },
+  { id: "s15", normal: "What’s something you’d never want someone to say about your penis?", bluff: "What’s something a snail would love to hear?" },
+  { id: "s16", normal: "What’s something that would be the worst excuse to avoid sex?", bluff: "What’s the best excuse for not doing your homework?" },
+  { id: "s17", normal: "What’s something that would make a hookup immediately awkward?", bluff: "Name a bad person" },
+  { id: "s18", normal: "What’s something that would be weird to compliment about someone’s body?", bluff: "How would you compliment a horse?" },
+  { id: "s19", normal: "What’s something that would be uncomfortable to hear during sex?", bluff: "What’s something weird to hear in a quiet moment?" },
+  { id: "s20", normal: "What’s something that would make a kiss instantly bad?", bluff: "What’s something that would make a first impression bad?" },
+  { id: "s21", normal: "What’s something that would be weird to do after sex?", bluff: "What’s something you would want to do after a sad movie" },
+  { id: "s22", normal: "What’s something that would be the worst thing to say about someone’s vagina?", bluff: "How would you describe old person boobies" },
+  { id: "s23", normal: "Create a name for a vagina", bluff: "Create a nickname for a turtle" },
+  { id: "s24", normal: "Create a name for boobs", bluff: "Create a nickname for balls" }
 ];
 
 const PRESET_COLORS = ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ffffff'];
@@ -272,6 +272,8 @@ export default function App() {
   const [myDrawing, setMyDrawing] = useState('');
   const [joinedRoomCode, setJoinedRoomCode] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [revealStep, setRevealStep] = useState(0); // 0: Big Text Intro, 1: Show Whiteboard
 
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
 
@@ -316,6 +318,19 @@ export default function App() {
     });
   }, [user, joinedRoomCode, localPlayerId]);
 
+  // Handle Reveal Steps
+  useEffect(() => {
+    if (gameState?.status === 'REVEAL') {
+      setRevealStep(0);
+      const timer = setTimeout(() => {
+        setRevealStep(1);
+      }, 3000); // 3 seconds of big centered question text
+      return () => clearTimeout(timer);
+    } else {
+      setRevealStep(0);
+    }
+  }, [gameState?.status, gameState?.round]);
+
   useEffect(() => {
     if (gameState?.status === 'DRAWING' || gameState?.status === 'LOBBY') {
       setHasVoted(false);
@@ -338,7 +353,7 @@ export default function App() {
     if (isHost && gameState?.status === 'DRAWING') {
       if (gameState.readyPlayers?.length === gameState.players.length && gameState.players.length > 0) {
         if (timerRef.current) clearInterval(timerRef.current);
-        updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 0 });
+        updateDoc(getRoomRef(joinedRoomCode), { status: 'REVEAL', timer: 5 }); // 5 seconds wait
       }
     }
   }, [gameState?.readyPlayers, gameState?.status, isHost, joinedRoomCode, gameState?.players?.length]);
@@ -366,17 +381,6 @@ export default function App() {
     }, 1000);
   };
 
-  const copyInviteLink = () => {
-    const el = document.createElement('textarea');
-    el.value = window.location.href;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  };
-
   const createRoom = async () => {
     if (!userName.trim()) return setError("Name required");
     setLoading(true);
@@ -384,7 +388,7 @@ export default function App() {
     try {
       await setDoc(getRoomRef(code), {
         code, hostId: localPlayerId, theme: 'rose', status: 'LOBBY',
-        targetScore: 5, susMode: false, susQuestionsAsked: 0, susRequest: null,
+        targetScore: 5, susMode: false, usedPrompts: [],
         players: [{ id: localPlayerId, name: userName, score: 0 }],
         readyPlayers: [], drawings: {}, votes: {}, round: 1, createdAt: Date.now()
       });
@@ -411,22 +415,26 @@ export default function App() {
     if (!isHost) return;
     if (gameState.players.length < 2) return;
 
-    let useSus = false;
-    if (gameState.susMode) {
-      const targetSus = Math.max(1, Math.round((gameState.targetScore || 5) * 0.25));
-      const left = Math.max(1, (gameState.targetScore || 5) - (gameState.round || 1) + 1);
-      useSus = (gameState.susQuestionsAsked || 0) < targetSus && Math.random() <= (targetSus - (gameState.susQuestionsAsked || 0)) / left;
+    let pool = gameState.susMode ? SUS_PROMPTS : PROMPT_PAIRS;
+    const available = pool.filter(p => !gameState.usedPrompts?.includes(p.id));
+    
+    if (available.length === 0) {
+      // Reset if we run out
+      await updateDoc(getRoomRef(joinedRoomCode), { usedPrompts: [] });
+      pool = pool;
+    } else {
+      pool = available;
     }
-    const promptList = useSus ? SUS_PROMPTS : PROMPT_PAIRS;
-    const prompt = promptList[Math.floor(Math.random() * promptList.length)];
+
+    const prompt = pool[Math.floor(Math.random() * pool.length)];
     const impId = gameState.players[Math.floor(Math.random() * gameState.players.length)].id;
     const isGameOver = gameState.players.some(p => p.score >= (gameState.targetScore || 5));
     
     await updateDoc(getRoomRef(joinedRoomCode), {
       status: 'DRAWING', currentPrompt: prompt, impostorId: impId,
+      usedPrompts: arrayUnion(prompt.id),
       drawings: {}, votes: {}, readyPlayers: [], timer: 90, 
       round: isGameOver ? 1 : (gameState.round || 1) + 1,
-      susQuestionsAsked: isGameOver ? 0 : (useSus ? (gameState.susQuestionsAsked || 0) + 1 : (gameState.susQuestionsAsked || 0)),
       players: isGameOver ? gameState.players.map(p => ({...p, score: 0})) : gameState.players
     });
     runTimer(90, 'REVEAL');
@@ -483,7 +491,41 @@ export default function App() {
     await updateDoc(getRoomRef(joinedRoomCode), { susMode: accept ? true : gameState.susMode, susRequest: null });
   };
 
+  const leaveGame = async () => {
+    if (joinedRoomCode && user) {
+        const playerToRemove = gameState?.players.find(p => p.id === localPlayerId);
+        if (playerToRemove) {
+            await updateDoc(getRoomRef(joinedRoomCode), { players: arrayRemove(playerToRemove) });
+        }
+    }
+    setJoinedRoomCode('');
+    setGameState(null);
+    setShowLeaveConfirm(false);
+  };
+
   const t = THEMES[gameState?.theme] || THEMES.rose;
+
+  const LeaveButton = () => (
+    <div className="fixed bottom-3 right-3 z-[1000]">
+      <button onClick={() => setShowLeaveConfirm(true)} className="p-2.5 bg-black/20 hover:bg-black/40 text-white/80 rounded-full backdrop-blur-md transition-all shadow-lg active:scale-90">
+        <LogOut size={18} />
+      </button>
+    </div>
+  );
+
+  const LeaveModal = () => showLeaveConfirm && (
+    <div className="fixed inset-0 z-[2000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 text-stone-800">
+      <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertCircle size={32} /></div>
+        <h3 className="text-2xl font-black mb-4 leading-none">LEAVE GAME?</h3>
+        <p className="text-stone-500 font-bold mb-8 leading-tight">Are you sure you want to exit to the home screen?</p>
+        <div className="flex gap-3">
+          <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 py-4 bg-stone-100 font-black rounded-2xl active:scale-95">STAY</button>
+          <button onClick={leaveGame} className="flex-1 py-4 bg-red-500 text-white font-black rounded-2xl shadow-lg shadow-red-200 active:scale-95">LEAVE</button>
+        </div>
+      </div>
+    </div>
+  );
 
   // --- ENTRY SCREEN ---
   if (!gameState) {
@@ -493,10 +535,10 @@ export default function App() {
           <h1 className="text-5xl font-black text-blue-600 italic text-center mb-8 tracking-tighter uppercase font-black">BLUFF</h1>
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all font-bold" />
-            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-black">HOST GAME</button>
+            <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all font-black leading-none">HOST GAME</button>
             <div className="flex flex-col gap-3">
               <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value.replace(/\D/g, ''))} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all font-bold" />
-              <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm tracking-widest font-black">Join Room</button>
+              <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm tracking-widest font-black leading-none">Join Room</button>
             </div>
             {error && <p className="text-red-500 text-center font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
             <div className="pt-6 border-t border-stone-100 flex items-start gap-3 opacity-60">
@@ -526,25 +568,25 @@ export default function App() {
           </div>
         )}
 
-        <div className="w-full max-w-5xl h-full flex flex-col landscape:flex-row gap-4 sm:gap-6 overflow-hidden">
+        <div className="w-full max-w-5xl h-full flex flex-col md:flex-row gap-4 sm:gap-6 overflow-hidden items-center justify-center">
           {/* Settings Section */}
-          <div className="flex flex-col gap-4 landscape:w-1/2 overflow-hidden shrink-0">
+          <div className="flex flex-col gap-4 w-full md:w-1/2 overflow-hidden shrink-0">
             <div className="bg-white/10 p-4 sm:p-6 rounded-[2rem] border border-white/10 flex flex-col gap-4 text-center shadow-lg">
                <div className="leading-none">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
                     <h2 className="text-4xl sm:text-5xl font-black drop-shadow-md tracking-tighter">{gameState.code}</h2>
                </div>
                {isHost && (
-                 <button onClick={startRound} disabled={gameState.players.length < 2} className="w-full py-3 sm:py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all uppercase tracking-tighter text-sm sm:text-base">
+                 <button onClick={startRound} disabled={gameState.players.length < 2} className="w-full py-3 sm:py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 disabled:opacity-50 transition-all uppercase tracking-tighter text-sm sm:text-base leading-none">
                     {gameState.players.length < 2 ? 'Need 2 Players' : 'Start Game'}
                  </button>
                )}
             </div>
 
-            {isHost && (
-               <div className="bg-white/10 p-4 sm:p-6 rounded-[2rem] border border-white/10 flex flex-col gap-4 shadow-lg">
+            {isHost ? (
+               <div className="bg-white/10 p-4 sm:p-6 rounded-[2rem] border border-white/10 flex flex-col gap-5 shadow-lg">
                   <label className="flex items-center justify-between bg-black/20 p-3 sm:p-4 rounded-2xl cursor-pointer hover:bg-black/30 transition-all border border-white/5 shrink-0">
-                    <span className="font-bold flex items-center gap-3 text-sm tracking-tight"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> Sus Mode</span>
+                    <span className="font-bold flex items-center gap-3 text-sm tracking-tight font-black uppercase leading-none"><Flame size={20} className={gameState.susMode ? "text-rose-400" : "text-stone-400"} /> Sus Mode</span>
                     <div className={`w-14 h-7 rounded-full p-1 transition-all ${gameState.susMode ? 'bg-rose-500' : 'bg-stone-600'}`}><div className={`w-5 h-5 rounded-full bg-white transition-all ${gameState.susMode ? 'translate-x-7' : 'translate-x-0'}`} /></div>
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
@@ -555,23 +597,21 @@ export default function App() {
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
                           style={THEMES[k].style || { backgroundColor: THEMES[k].color }} 
-                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20' : 'border-black/20 opacity-80'}`} />
+                          className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20' : 'border-black/20 opacity-80 hover:opacity-100'}`} />
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10 shrink-0">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Win At: {gameState.targetScore || 5} pts</span>
+                  <div className="flex items-center justify-between px-2 pt-2 border-t border-white/10 shrink-0 font-black">
+                    <span className="text-[10px] uppercase tracking-widest text-white/60">Win At: {gameState.targetScore || 5} pts</span>
                     <input type="range" min="3" max="15" value={gameState.targetScore || 5} onChange={e => updateDoc(getRoomRef(joinedRoomCode), { targetScore: parseInt(e.target.value) })} className="w-24 sm:w-32 accent-white" />
                   </div>
                </div>
-            )}
-            
-            {!isHost && (
+            ) : (
                <div className="bg-white/10 p-6 rounded-[2rem] border border-white/10 flex flex-col gap-4 text-center">
-                  <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50"><span>Target Score</span><span>{gameState.targetScore || 5}</span></div>
+                  <div className="flex justify-between items-center px-2 font-black uppercase tracking-widest text-xs text-white/50"><span>Points to Win</span><span>{gameState.targetScore || 5}</span></div>
                   {!gameState.susMode ? (
-                    <button onClick={requestSusMode} className="w-full py-4 bg-black/20 hover:bg-black/30 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"><Flame size={18} /> Request Sus Mode</button>
+                    <button onClick={requestSusMode} className="w-full py-4 bg-black/20 hover:bg-black/30 border border-white/5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-inner active:scale-95"><Flame size={18} /> Request Sus Mode</button>
                   ) : (
                     <div className="w-full py-4 bg-rose-500/20 border border-rose-500/20 rounded-2xl font-black text-xs uppercase tracking-widest text-rose-100 flex items-center justify-center gap-2"><Flame size={18} /> Sus Mode Enabled</div>
                   )}
@@ -580,11 +620,11 @@ export default function App() {
           </div>
 
           {/* Players List Section */}
-          <div className="flex flex-col flex-1 bg-white rounded-[2rem] p-4 sm:p-6 text-stone-800 shadow-2xl overflow-hidden min-h-0">
+          <div className="flex flex-col w-full md:flex-1 bg-white rounded-[2rem] p-4 sm:p-6 text-stone-800 shadow-2xl overflow-hidden min-h-[180px]">
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-3 mb-3 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                 {gameState.players.map(p => (
-                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black shrink-0`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-0.5 rounded-full uppercase tracking-tighter opacity-70 font-black">You</span>}</div>
+                  <div key={p.id} className="p-3 bg-stone-50 rounded-xl font-bold flex items-center gap-3 border border-stone-100 shrink-0 leading-none"><div className={`w-8 h-8 rounded-full ${t.bg} text-white flex items-center justify-center text-xs shadow-sm font-black shrink-0`}>{p.name[0]}</div><span className="truncate flex-1 tracking-tight">{p.name}</span>{p.id === localPlayerId && <span className="text-[8px] bg-stone-200 px-1.5 py-1 rounded-full uppercase tracking-tighter opacity-70 font-black shrink-0">You</span>}</div>
                 ))}
              </div>
              <button onClick={copyInviteLink} className={`mt-4 w-full py-3 ${t.lightBg} ${t.lightText} rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shrink-0`}>
@@ -592,6 +632,8 @@ export default function App() {
              </button>
           </div>
         </div>
+        <LeaveButton />
+        <LeaveModal />
       </div>
     );
   }
@@ -609,63 +651,82 @@ export default function App() {
 
     if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL') {
       const isImp = gameState.impostorId === localPlayerId;
-      const prompt = isImp ? gameState.currentPrompt?.bluff : gameState.currentPrompt?.normal;
-      const isFrozen = gameState.status === 'REVEAL'; 
+      const promptText = isImp ? gameState.currentPrompt?.bluff : gameState.currentPrompt?.normal;
       const isReady = gameState.readyPlayers?.includes(localPlayerId);
+      const isRevealing = gameState.status === 'REVEAL';
       
       return (
-        <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden">
-          {!isFrozen && (
-            <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
-              <div className="flex-1 pr-6 min-w-0 leading-none font-black">
-                 <span className="text-[8px] sm:text-[10px] font-black text-stone-400 block uppercase mb-0.5 tracking-widest">Secret Prompt</span>
-                 <span className={`text-xs sm:text-xl font-black truncate block ${t.text} tracking-tight`}>{prompt}</span>
-              </div>
-              <div className="font-mono font-black bg-stone-100 px-4 py-1 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
-            </div>
-          )}
-          <div className={`flex-1 overflow-hidden ${isFrozen ? 'p-0' : 'p-1'}`}>
-             <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} hideTools={isFrozen} />
+        <div className="fixed inset-0 h-[100svh] w-screen bg-white flex flex-col overflow-hidden text-stone-800">
+          {/* Header/Question (Always Normal Question during reveal) */}
+          <div className={`bg-white px-5 py-3 border-b border-stone-100 flex justify-between items-center z-10 shrink-0 transition-all duration-700 ${isRevealing ? 'bg-stone-50 border-none' : ''}`}>
+             <div className="flex-1 pr-6 min-w-0">
+               <span className={`text-[9px] font-black text-stone-400 block uppercase mb-1 tracking-widest font-black transition-opacity ${isRevealing && revealStep === 0 ? 'opacity-0' : 'opacity-100'}`}>
+                 {isRevealing ? "Group Question" : "Secret Prompt"}
+               </span>
+               <span className={`font-black break-words whitespace-normal leading-tight block ${t.text} transition-all duration-700 ${isRevealing && revealStep === 0 ? 'text-3xl text-center fixed inset-0 flex items-center justify-center px-8 text-stone-900 bg-white z-[100]' : 'text-sm sm:text-lg'}`}>
+                  {isRevealing && revealStep === 0 ? `Question: ${gameState.currentPrompt?.normal}` : (isRevealing ? gameState.currentPrompt?.normal : promptText)}
+               </span>
+             </div>
+             {!isRevealing && (
+               <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
+             )}
           </div>
-          {!isFrozen && (
-            <div className="px-5 py-2 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
-              <span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Done</span>
-              <button onClick={toggleReady} className={`px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'} font-black`}>
+
+          {/* Whiteboard - Vanishes during first step of reveal intro */}
+          <div className={`flex-1 overflow-hidden transition-opacity duration-500 ${isRevealing && revealStep === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+             <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isReady || isRevealing} initialData={myDrawing} hideTools={isRevealing} />
+          </div>
+
+          {!isRevealing && (
+            <div className="px-5 py-2.5 bg-white border-t border-stone-100 flex justify-between items-center shrink-0">
+              <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest font-black">{gameState.readyPlayers?.length || 0} / {gameState.players.length} Ready</span>
+              <button onClick={toggleReady} className={`px-8 py-2.5 rounded-xl font-black text-xs transition-all shadow-lg active:scale-90 ${isReady ? 'bg-green-500 text-white shadow-green-200' : 'bg-stone-800 text-white shadow-stone-200'} uppercase font-black`}>
                   {isReady ? "LOCKED IN" : "SUBMIT"}
               </button>
             </div>
           )}
-          {isFrozen && isHost && (
-            <button onClick={goToVoting} className="fixed bottom-4 left-1/2 -translate-x-1/2 px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-90 uppercase tracking-widest z-50 font-black">Go to Voting</button>
+
+          {isRevealing && isHost && revealStep === 1 && (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full px-6 flex justify-center z-[110]">
+              {gameState.timer > 0 ? (
+                <div className="px-10 py-3.5 bg-stone-200 text-stone-500 rounded-2xl font-black uppercase text-xs">Wait to Vote ({gameState.timer}s)</div>
+              ) : (
+                <button onClick={goToVoting} className="px-12 py-4 bg-black text-white rounded-2xl font-black shadow-2xl active:scale-90 uppercase tracking-widest transition-all">Reveal Voting Page</button>
+              )}
+            </div>
           )}
+          <LeaveButton />
+          <LeaveModal />
         </div>
       );
     }
 
     if (gameState.status === 'VOTING') {
       return (
-        <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 overflow-y-auto flex flex-col items-center text-stone-800">
+        <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center text-stone-800">
           <div className="w-full max-w-6xl h-full flex flex-col">
              <div className="mb-6 shrink-0 text-center sm:text-left">
-                  <h2 className="text-2xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
-                  <p className="text-stone-400 font-bold text-xs sm:text-sm">Target Prompt: <span className={`font-black not-italic ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
+                  <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-1 leading-none uppercase font-black">Who's Lying?</h2>
+                  <p className="text-stone-400 font-bold text-xs sm:text-sm leading-tight">Target Question: <span className={`font-black not-italic break-words ${t.text} uppercase`}>"{gameState.currentPrompt?.normal}"</span></p>
              </div>
-             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 flex-1">
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 flex-1">
                {gameState.players.map(p => (
                  <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                    className={`bg-white p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 sm:border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-4 sm:ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
                    <div className="aspect-video bg-stone-50 rounded-xl sm:rounded-2xl mb-3 sm:mb-4 overflow-hidden border border-stone-100 relative shadow-inner">
-                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">NO DRAWING</div>}
+                     {gameState.drawings?.[p.id] ? <img src={gameState.drawings[p.id]} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-stone-300 font-black text-[8px] sm:text-[10px] uppercase text-center p-4 tracking-tighter leading-none font-black">BLANK</div>}
                    </div>
                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
+                      <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} transition-transform group-hover:scale-110`} />
                       <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight">{p.name}</span>
-                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
+                      {p.id === localPlayerId && <span className="text-[9px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
                    </div>
                  </button>
                ))}
              </div>
           </div>
+          <LeaveButton />
+          <LeaveModal />
         </div>
       );
     }
@@ -673,8 +734,10 @@ export default function App() {
     if (gameState.status === 'COUNTDOWN') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000] p-6`} style={t.style}>
-          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center">Calculating Results...</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-white/90 tracking-widest uppercase mb-4 sm:mb-8 drop-shadow-md bg-black/20 px-6 sm:px-8 py-2 sm:py-3 rounded-full backdrop-blur-md text-center font-black">Calculating Results...</h2>
           <div className="text-[10rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
+          <LeaveButton />
+          <LeaveModal />
         </div>
       );
     }
@@ -696,20 +759,20 @@ export default function App() {
 
             <div className="text-center py-4">
               <div className={`${t.text} font-black uppercase tracking-widest text-[10px] mb-2 opacity-60`}>The Impostor Was</div>
-              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none font-black">{imp?.name}</h2>
+              <h2 className="text-6xl font-black text-stone-800 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
             </div>
 
             <div className="bg-white rounded-[2rem] p-6 shadow-2xl border border-stone-100 flex flex-col">
               <div className="border-b border-stone-100 pb-4 mb-4 text-left space-y-3 shrink-0 font-black">
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-xs sm:text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
-                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight tracking-tight break-words">{gameState.currentPrompt?.normal}</span></div>
+                  <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight tracking-tight break-words`}>{gameState.currentPrompt?.bluff}</span></div>
               </div>
               <div className="space-y-2 flex-1">
                 {gameState.players.sort((a,b)=>b.score-a.score).map((p, i) => (
                   <div key={p.id} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl transition-all ${p.id === gameState.impostorId ? `${t.lightBg} border-2 border-dashed ${t.border}` : 'bg-stone-50'}`}>
                       <div className="flex items-center gap-3 overflow-hidden font-black">
                           <span className="font-black text-stone-300 text-xs w-4 shrink-0">{i+1}</span>
-                          <span className={`font-black truncate text-sm`}>{p.name}</span>
+                          <span className={`font-black truncate text-sm font-black`}>{p.name}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 font-black">
                           <Trophy size={16} className={isGameOver && winners.some(w => w.id === p.id) ? "text-amber-500 scale-125" : "text-stone-200"} />
@@ -722,6 +785,8 @@ export default function App() {
 
             {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl shadow-xl active:scale-95 transition-all w-full tracking-tighter uppercase font-black`}>{isGameOver ? 'START NEW GAME' : 'CONTINUE'}</button>}
           </div>
+          <LeaveButton />
+          <LeaveModal />
         </div>
       );
     }
