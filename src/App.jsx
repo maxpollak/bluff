@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize, AlertCircle, Info
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, RotateCw, Smartphone, Maximize, AlertCircle, Share
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -292,10 +292,9 @@ export default function App() {
   useEffect(() => {
     const checkStatus = () => {
       setIsPortrait(window.innerHeight > window.innerWidth);
-      // For iPhone Safari, we consider "Fullscreen" to be when the toolbar is hidden.
-      // We check if the innerHeight is close to the screen height.
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isFull = !!document.fullscreenElement || (isSafari && (window.screen.height - window.innerHeight) < 120);
+      // Determine if launched as standalone PWA or in native fullscreen
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      const isFull = !!document.fullscreenElement || isStandalone;
       setIsFullscreen(isFull);
     };
     checkStatus();
@@ -488,24 +487,29 @@ export default function App() {
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Maximize size={32} />
             </div>
-            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 leading-none">ENTER FULL SCREEN</h2>
-            <p className="text-stone-500 font-bold text-sm mb-8 leading-relaxed">To hide browser bars and provide the best whiteboard experience, Bluff requires full-screen mode.</p>
+            <h2 className="text-2xl font-black uppercase tracking-tighter mb-4 leading-none">ENTER FULL SCREEN</h2>
+            <p className="text-stone-500 font-bold text-sm mb-8 leading-relaxed">Bluff requires a dedicated full-screen experience to provide the best game console and whiteboard feel.</p>
             
             <div className="space-y-4">
-                {/* Standard Fullscreen Button (Works for Android/Chrome) */}
+                {/* Standard Fullscreen Button (Works for Android/Chrome/PC) */}
                 <button onClick={toggleFullscreen} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all">
                    ENABLE FULLSCREEN
                 </button>
 
-                {/* iPhone Safari Specific Cheat Code */}
+                {/* iPhone Safari Mandatory Step */}
                 <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 text-left">
                     <div className="flex items-center gap-2 mb-2 text-stone-700">
                         <Smartphone size={16} className="shrink-0" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Safari / iPhone Users</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">iPhone Mandatory Step</span>
                     </div>
-                    <p className="text-[11px] text-stone-500 leading-tight">
-                        Tap the <span className="font-bold text-stone-700">"AA"</span> button in your address bar and select <span className="font-bold text-stone-700 italic">"Hide Toolbar"</span> to hide browser bars and start.
+                    <p className="text-[11px] text-stone-500 leading-tight mb-3">
+                        iPhone Safari physically blocks full-screen apps unless launched from your Home Screen.
                     </p>
+                    <ol className="text-[10px] text-stone-600 space-y-1.5 font-bold">
+                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">1</div> <span>Tap the <Share size={10} className="inline mx-1 text-blue-500" /> icon at the bottom.</span></li>
+                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">2</div> <span>Select <span className="text-blue-600">"Add to Home Screen"</span>.</span></li>
+                        <li className="flex gap-2 items-center"><div className="w-4 h-4 rounded-full bg-stone-200 flex items-center justify-center shrink-0">3</div> <span>Open <span className="text-blue-600">"Bluff"</span> from your apps.</span></li>
+                    </ol>
                 </div>
             </div>
         </div>
@@ -513,7 +517,7 @@ export default function App() {
     );
   }
 
-  // --- DRAWING LOCK (Only Landscape for Whiteboard) ---
+  // --- WHITEBOARD LOCK (Only Landscape for Drawing & Reveal) ---
   if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
     return (
       <div className="fixed inset-0 z-[1999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
@@ -522,7 +526,7 @@ export default function App() {
           <Smartphone size={80} className="text-white absolute inset-0 m-auto" />
         </div>
         <h2 className="text-2xl font-black uppercase mb-2 leading-none">TURN SIDEWAYS!</h2>
-        <p className="text-stone-400 font-bold text-sm">Drawing time. Flip your phone sideways to unlock the whiteboard.</p>
+        <p className="text-stone-400 font-bold text-sm">Whiteboard time. Flip your phone sideways to draw and reveal.</p>
       </div>
     );
   }
@@ -567,7 +571,7 @@ export default function App() {
             <div className="flex justify-between items-center bg-black/20 p-6 rounded-[2rem] backdrop-blur-sm shrink-0">
                <div className="leading-none">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60 block mb-1">Room Code</span>
-                    <h2 className="text-5xl font-black drop-shadow-md">{gameState.code}</h2>
+                    <h2 className="text-4xl sm:text-5xl font-black drop-shadow-md">{gameState.code}</h2>
                </div>
                {isHost && <button onClick={startRound} className="px-8 py-4 bg-white text-stone-800 rounded-2xl font-black shadow-xl active:scale-95 transition-all uppercase tracking-tighter">Start Game</button>}
             </div>
@@ -653,12 +657,12 @@ export default function App() {
   if (gameState.status === 'VOTING') {
     return (
       <div className="min-h-[100dvh] bg-stone-50 p-6 overflow-y-auto flex flex-col items-center">
-        <div className="w-full max-w-6xl">
-           <div className="mb-8">
+        <div className="w-full max-w-6xl h-full flex flex-col">
+           <div className="mb-8 shrink-0">
                 <h2 className="text-4xl font-black text-stone-800 tracking-tighter mb-1 leading-none uppercase">Who's Lying?</h2>
                 <p className="text-stone-400 font-bold text-sm">Choose the player who had the fake prompt: <span className={`font-black not-italic ${t.text} uppercase`}>"{gameState.currentPrompt.normal}"</span></p>
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-4 gap-6 flex-1">
              {gameState.players.map(p => (
                <button key={p.id} disabled={hasVoted || p.id === localPlayerId} onClick={() => {submitVote(p.id); setHasVoted(true);}}
                  className={`bg-white p-4 rounded-[2rem] border-4 shadow-xl transition-all text-left group ${gameState.votes?.[localPlayerId] === p.id ? `${t.border} ring-8 ${t.activeRing} scale-105` : 'border-white hover:border-stone-100'}`}>
@@ -680,7 +684,7 @@ export default function App() {
   if (gameState.status === 'COUNTDOWN') {
     return (
       <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white z-[3000]`} style={t.style}>
-        <h2 className="text-2xl font-black text-white/90 tracking-widest uppercase mb-8 drop-shadow-md bg-black/20 px-8 py-3 rounded-full backdrop-blur-md">Calculating Results...</h2>
+        <h2 className="text-2xl font-black text-white/90 tracking-widest uppercase mb-8 drop-shadow-md bg-black/20 px-8 py-3 rounded-full backdrop-blur-sm">Calculating Results...</h2>
         <div className="text-[15rem] sm:text-[25rem] font-black drop-shadow-2xl animate-pulse leading-none">{gameState.timer}</div>
       </div>
     );
@@ -702,7 +706,7 @@ export default function App() {
             {isHost && <button onClick={startRound} className={`py-6 ${t.bg} text-white rounded-[2rem] font-black text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
           </div>
           <div className="w-full landscape:w-[400px] bg-white rounded-[3rem] p-8 shadow-2xl border border-stone-100 flex flex-col">
-            <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4">
+            <div className="border-b border-stone-100 pb-6 mb-6 text-left space-y-4 shrink-0">
                 <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-sm leading-tight">{gameState.currentPrompt.normal}</span></div>
                 <div><span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-sm leading-tight`}>{gameState.currentPrompt.bluff}</span></div>
             </div>
