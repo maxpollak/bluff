@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { 
   Palette, Eraser, Undo2, Trophy, UserCircle, 
-  Square, Circle, Triangle, Minus, Copy, Check, Flame, Smartphone, Info, Loader2
+  Square, Circle, Triangle, Minus, Copy, Check, Flame, Info, Loader2
 } from 'lucide-react';
 
 // --- YOUR REAL FIREBASE CONFIGURATION ---
@@ -265,7 +265,6 @@ const DrawingCanvas = ({ onSave, disabled, initialData }) => {
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [isPortrait, setIsPortrait] = useState(false);
   const timerRef = useRef(null);
   const [localPlayerId] = useState(() => {
     const stored = sessionStorage.getItem('bluff_player_id');
@@ -289,15 +288,6 @@ export default function App() {
   const getRoomRef = (code) => doc(collection(db, 'rooms'), code.trim());
 
   useEffect(() => {
-    const checkOrientation = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    return () => window.removeEventListener('resize', checkOrientation);
-  }, []);
-
-  useEffect(() => {
     const initAuth = async () => {
       try { await signInAnonymously(auth); } catch (err) { console.error("Auth error:", err); }
     };
@@ -319,6 +309,7 @@ export default function App() {
     });
   }, [user, joinedRoomCode, localPlayerId]);
 
+  // FIX: Whiteboard clears automatically at the start of a new round
   useEffect(() => {
     if (gameState?.status === 'DRAWING' || gameState?.status === 'LOBBY') {
       setHasVoted(false);
@@ -463,20 +454,6 @@ export default function App() {
 
   const t = THEMES[gameState?.theme] || THEMES.rose;
 
-  // --- WHITEBOARD ORIENTATION GUARD (ONLY FOR DRAWING/REVEAL) ---
-  if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
-    return (
-      <div className="fixed inset-0 z-[1999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
-        <div className="w-24 h-24 mb-6 relative">
-          <RotateCw size={96} className="text-blue-500 animate-spin-slow opacity-20 absolute inset-0" />
-          <Smartphone size={80} className="text-white absolute inset-0 m-auto" />
-        </div>
-        <h2 className="text-2xl font-black uppercase mb-2 leading-none tracking-tighter">TURN SIDEWAYS!</h2>
-        <p className="text-stone-400 font-bold text-sm">Whiteboard time. Flip your phone sideways to draw and reveal.</p>
-      </div>
-    );
-  }
-
   // --- ENTRY SCREEN ---
   if (!gameState) {
     return (
@@ -486,7 +463,9 @@ export default function App() {
           <div className="space-y-4">
             <input type="text" placeholder="Your Name" value={userName} onChange={e => setUserName(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-blue-500 outline-none transition-all" />
             <button onClick={createRoom} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl active:scale-95 transition-all">HOST GAME</button>
-            <div className="flex flex-col gap-4">
+            
+            {/* FIX: Vertically stacked Join section for small screens */}
+            <div className="flex flex-col gap-3">
               <input type="text" maxLength={6} placeholder="Room Code" value={roomCode} onChange={e => setRoomCode(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold tracking-widest focus:border-blue-500 border-2 border-transparent outline-none transition-all" />
               <button onClick={joinRoom} className="w-full py-4 bg-slate-800 text-white rounded-2xl font-black active:scale-95 transition-all uppercase text-sm">Join Room</button>
             </div>
@@ -498,7 +477,7 @@ export default function App() {
               </div>
               <div className="text-left">
                 <p className="text-[10px] font-black uppercase text-blue-600 tracking-wider mb-0.5">Mobile Player Tip</p>
-                <p className="text-[11px] text-stone-500 leading-tight font-medium">For the best experience, tap <span className="font-bold text-stone-700">"Add to Home Screen"</span> in your browser menu to play Bluff like a native app.</p>
+                <p className="text-[11px] text-stone-500 leading-tight font-medium">For the best experience, tap <span className="font-bold text-stone-700">"Add to Home Screen"</span> in Safari to play Bluff like a native app.</p>
               </div>
             </div>
           </div>
@@ -524,7 +503,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 h-full max-h-[90vh]">
+        <div className="w-full max-w-5xl flex flex-col md:flex-row gap-6 h-full max-h-[90vh]">
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
             <div className="flex justify-between items-center bg-black/20 p-6 rounded-[2rem] backdrop-blur-sm shrink-0 border border-white/5">
                <div className="leading-none">
@@ -550,13 +529,14 @@ export default function App() {
                     <input type="checkbox" className="hidden" checked={!!gameState.susMode} onChange={(e) => updateDoc(getRoomRef(joinedRoomCode), { susMode: e.target.checked })} />
                   </label>
                   
+                  {/* FIX: Redesigned Theme Picker for clear visibility */}
                   <div className="space-y-4">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-50 block text-center">Room Theme</span>
                     <div className="flex flex-wrap gap-4 justify-center">
                       {Object.keys(THEMES).map(k => (
                         <button key={k} onClick={() => updateDoc(getRoomRef(joinedRoomCode), {theme: k})} 
                           style={THEMES[k].style || { backgroundColor: THEMES[k].color }} 
-                          className={`w-10 h-10 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20 shadow-white/10' : 'border-stone-800/60 opacity-100 hover:scale-105'}`} />
+                          className={`w-12 h-12 rounded-full border-4 transition-all shadow-lg ${gameState.theme === k ? 'border-white scale-110 ring-4 ring-white/20 shadow-white/10' : 'border-stone-800/60 opacity-80 hover:opacity-100 hover:scale-105'}`} />
                       ))}
                     </div>
                   </div>
@@ -578,7 +558,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="w-full landscape:w-80 bg-white rounded-[2rem] p-6 text-stone-800 shadow-2xl flex flex-col min-h-[250px] overflow-hidden">
+          <div className="w-full md:w-80 bg-white rounded-[2rem] p-6 text-stone-800 shadow-2xl flex flex-col min-h-[250px] overflow-hidden">
              <h3 className="font-black uppercase tracking-tighter text-stone-400 border-b border-stone-100 pb-4 mb-4 flex justify-between shrink-0">Players <span>{gameState.players.length}</span></h3>
              <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
                 {gameState.players.map(p => (
@@ -596,12 +576,12 @@ export default function App() {
 
   // --- GAMEPLAY STATES ---
   if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL' || gameState.status === 'VOTING' || gameState.status === 'RESULTS' || gameState.status === 'COUNTDOWN') {
-    // Safety check: Prompt data might take a split second to sync. Show loader instead of crashing.
+    // FIX: Prompt data loader ensures no gray/blank screen crash
     if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white p-8 text-center`}>
           <Loader2 size={48} className="animate-spin mb-4" />
-          <h2 className="text-2xl font-black uppercase tracking-widest">Syncing Game Data...</h2>
+          <h2 className="text-2xl font-black uppercase tracking-widest">Syncing Round...</h2>
         </div>
       );
     }
@@ -617,9 +597,9 @@ export default function App() {
           <div className="bg-white px-5 py-2 border-b flex justify-between items-center z-10 shrink-0 shadow-sm">
             <div className="flex-1 pr-6 min-w-0 leading-none">
                <span className="text-[8px] sm:text-[10px] font-black text-stone-400 block uppercase mb-0.5 tracking-widest">Secret Prompt</span>
-               <span className={`text-xs sm:text-xl font-black truncate block ${t.text} tracking-tight`}>{prompt}</span>
+               <span className={`text-sm sm:text-xl font-black truncate block ${t.text} tracking-tight`}>{prompt}</span>
             </div>
-            <div className="font-mono font-black bg-stone-100 px-4 py-1 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
+            <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
           </div>
           <div className="flex-1 p-1 overflow-hidden">
              <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
@@ -683,14 +663,14 @@ export default function App() {
       
       return (
         <div className="min-h-[100dvh] bg-stone-50 p-4 sm:p-6 flex items-center justify-center overflow-y-auto">
-          <div className="w-full max-w-5xl flex flex-col landscape:flex-row gap-6 sm:gap-8 items-center landscape:items-stretch">
+          <div className="w-full max-w-5xl flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-stretch">
             <div className="flex-1 flex flex-col justify-center text-center">
               {isGameOver && <div className="bg-amber-400 text-amber-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] mb-6 sm:mb-8 shadow-2xl border-4 sm:border-8 border-amber-200 animate-bounce"><h2 className="text-2xl sm:text-3xl font-black uppercase tracking-widest mb-1 leading-none">🏆 WINNER!</h2><p className="font-black text-xl sm:text-2xl uppercase tracking-tighter">{winners.map(w => w.name).join(' & ')}</p></div>}
               <div className={`${t.text} font-black uppercase tracking-widest text-[10px] sm:text-xs mb-2 sm:mb-3 opacity-60`}>The Impostor Was</div>
               <h2 className="text-5xl sm:text-8xl font-black text-stone-800 mb-8 sm:mb-10 drop-shadow-lg tracking-tighter uppercase leading-none">{imp?.name}</h2>
               {isHost && <button onClick={startRound} className={`py-4 sm:py-6 ${t.bg} text-white rounded-[1.5rem] sm:rounded-[2rem] font-black text-xl sm:text-2xl shadow-xl active:scale-95 transition-all w-full tracking-tighter`} style={t.style}>{isGameOver ? 'START NEW GAME' : 'CONTINUE TO NEXT ROUND'}</button>}
             </div>
-            <div className="w-full landscape:w-[400px] bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col">
+            <div className="w-full md:w-[400px] bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-8 shadow-2xl border border-stone-100 flex flex-col">
               <div className="border-b border-stone-100 pb-4 sm:pb-6 mb-4 sm:mb-6 text-left space-y-3 sm:space-y-4 shrink-0">
                   <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Group Prompt</span><span className="text-stone-800 font-bold block text-xs sm:text-sm leading-tight tracking-tight">{gameState.currentPrompt?.normal}</span></div>
                   <div><span className="text-[9px] sm:text-[10px] font-black text-stone-400 uppercase tracking-widest block mb-0.5 sm:mb-1">Impostor Prompt</span><span className={`${t.text} font-bold block text-xs sm:text-sm leading-tight tracking-tight`}>{gameState.currentPrompt?.bluff}</span></div>
