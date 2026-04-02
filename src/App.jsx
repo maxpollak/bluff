@@ -265,7 +265,6 @@ const DrawingCanvas = ({ onSave, disabled, initialData }) => {
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [isPortrait, setIsPortrait] = useState(false);
   const timerRef = useRef(null);
   const [localPlayerId] = useState(() => {
     const stored = sessionStorage.getItem('bluff_player_id');
@@ -311,15 +310,6 @@ export default function App() {
     appleLink.href = iconUrl;
 
     document.title = "BLUFF";
-  }, []);
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    return () => window.removeEventListener('resize', checkOrientation);
   }, []);
 
   useEffect(() => {
@@ -513,20 +503,6 @@ export default function App() {
 
   const t = THEMES[gameState?.theme] || THEMES.rose;
 
-  // --- WHITEBOARD LOCK (Only Landscape for Drawing & Reveal) ---
-  if ((gameState?.status === 'DRAWING' || gameState?.status === 'REVEAL') && isPortrait) {
-    return (
-      <div className="fixed inset-0 z-[1999] bg-stone-900 flex flex-col items-center justify-center p-8 text-center text-white">
-        <div className="w-24 h-24 mb-6 relative">
-          <RotateCw size={96} className="text-blue-500 animate-spin-slow opacity-20 absolute inset-0" />
-          <Smartphone size={80} className="text-white absolute inset-0 m-auto" />
-        </div>
-        <h2 className="text-2xl font-black uppercase mb-2 leading-none tracking-tighter">TURN SIDEWAYS!</h2>
-        <p className="text-stone-400 font-bold text-sm">Whiteboard time. Flip your phone sideways to draw and reveal.</p>
-      </div>
-    );
-  }
-
   // --- ENTRY SCREEN ---
   if (!gameState) {
     return (
@@ -646,6 +622,7 @@ export default function App() {
 
   // --- GAMEPLAY STATES ---
   if (gameState.status === 'DRAWING' || gameState.status === 'REVEAL' || gameState.status === 'VOTING' || gameState.status === 'RESULTS' || gameState.status === 'COUNTDOWN') {
+    // Safety check: Prompt data might take a split second to sync. Show loader instead of crashing.
     if (!gameState.currentPrompt && gameState.status !== 'COUNTDOWN' && gameState.status !== 'RESULTS') {
       return (
         <div className={`fixed inset-0 ${t.bg} flex flex-col items-center justify-center text-white p-8 text-center`}>
@@ -668,7 +645,7 @@ export default function App() {
                <span className="text-[8px] sm:text-[10px] font-black text-stone-400 block uppercase mb-0.5 tracking-widest">Secret Prompt</span>
                <span className={`text-xs sm:text-xl font-black truncate block ${t.text} tracking-tight`}>{prompt}</span>
             </div>
-            <div className="font-mono font-black bg-stone-100 px-4 py-1 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
+            <div className="font-mono font-black bg-stone-100 px-4 py-1.5 rounded-full text-xs sm:text-base border border-stone-200 shrink-0">{gameState.timer}s</div>
           </div>
           <div className="flex-1 p-1 overflow-hidden">
              <DrawingCanvas key={gameState.round} onSave={(d) => setMyDrawing(d)} disabled={isFrozen} initialData={myDrawing} />
@@ -704,8 +681,8 @@ export default function App() {
                    </div>
                    <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${t.bg} shadow-sm transition-transform group-hover:scale-110`} />
-                      <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight font-black">{p.name}</span>
-                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter font-black">(You)</span>}
+                      <span className="font-black text-xs sm:text-sm text-stone-800 truncate flex-1 tracking-tight">{p.name}</span>
+                      {p.id === localPlayerId && <span className="text-[10px] opacity-50 font-black shrink-0 tracking-tighter">(You)</span>}
                    </div>
                  </button>
                ))}
